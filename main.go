@@ -33,6 +33,10 @@ func main() {
 	if err != nil {
 		log.Fatalf("Failed to parse config: %v", err)
 	}
+	log.Println("Removing old vendor directory")
+	if err := os.RemoveAll(filepath.Join(wd, vendorDir)); err != nil {
+		log.Fatalf("Remove old vendor dir: %v", err)
+	}
 	log.Println("Download dependencies")
 	if err := cloneAll(deps); err != nil {
 		log.Fatal(err)
