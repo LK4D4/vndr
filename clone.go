@@ -21,6 +21,14 @@ type depEntry struct {
 	rev     string
 }
 
+func (d depEntry) String() string {
+	res := fmt.Sprintf("%s %s %s", d.vcsType, d.target, d.rev)
+	if d.url != d.target {
+		res += " " + d.url
+	}
+	return res + "\n"
+}
+
 func parseDeps(r io.Reader, vendorDir string) ([]depEntry, error) {
 	var deps []depEntry
 	s := bufio.NewScanner(r)
@@ -31,8 +39,8 @@ func parseDeps(r io.Reader, vendorDir string) ([]depEntry, error) {
 		}
 		d := depEntry{
 			vcsType: parts[0],
-			url:     "https://" + parts[1],
-			target:  filepath.Join(vendorDir, parts[1]),
+			url:     parts[1],
+			target:  parts[1],
 			rev:     parts[2],
 		}
 		if len(parts) == 4 {
@@ -66,7 +74,7 @@ func preCheck(ds []depEntry) error {
 	return nil
 }
 
-func cloneAll(ds []depEntry) error {
+func cloneAll(vd string, ds []depEntry) error {
 	if err := preCheck(ds); err != nil {
 		return err
 	}
@@ -75,7 +83,7 @@ func cloneAll(ds []depEntry) error {
 	for _, d := range ds {
 		wg.Add(1)
 		go func(d depEntry) {
-			errCh <- cloneDep(d)
+			errCh <- cloneDep(vd, d)
 			wg.Done()
 		}(d)
 	}
@@ -102,31 +110,36 @@ func cleanupVendor(dir string) error {
 	return nil
 }
 
-func cloneDep(d depEntry) error {
+func cloneDep(vd string, d depEntry) error {
 	log.Printf("\tClone %s", d.url)
-	defer log.Printf("\tFinished clone %s finished\n", d.url)
-	_, err := os.Stat(d.target)
+	defer log.Printf("\tFinished clone %s", d.url)
+	target := filepath.Join(vd, d.target)
+	_, err := os.Stat(target)
 	if err != nil && !os.IsNotExist(err) {
 		return err
 	}
 	if !os.IsNotExist(err) {
-		if err := os.RemoveAll(d.target); err != nil {
+		if err := os.RemoveAll(target); err != nil {
 			return err
 		}
 	}
+	url := d.url
+	if !strings.HasPrefix(url, "https://") {
+		url = "https://" + url
+	}
 	switch d.vcsType {
 	case "git":
-		if err := cloneGIT(d.url, d.target, d.rev); err != nil {
+		if err := cloneGIT(url, target, d.rev); err != nil {
 			return fmt.Errorf("Failed to clone git: %v", err)
 		}
 	case "hg":
-		if err := cloneHG(d.url, d.target, d.rev); err != nil {
+		if err := cloneHG(url, target, d.rev); err != nil {
 			return fmt.Errorf("Failed to clone hg: %v", err)
 		}
 	default:
 		return fmt.Errorf("Unknown vcs: %s", d.vcsType)
 	}
-	return cleanupVendor(d.target)
+	return cleanupVendor(target)
 }
 
 func cloneGIT(url, target, rev string) error {
