@@ -9,6 +9,9 @@ import (
 const vendorDir = "vendor"
 
 func main() {
+	if os.Getenv("GOPATH") == "" {
+		log.Fatal("GOPATH must be set")
+	}
 	wd, err := os.Getwd()
 	if err != nil {
 		log.Fatalf("Error getting working directory: %v", err)
