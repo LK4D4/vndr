@@ -32,18 +32,18 @@ func collectAllDeps(wd string, initPkgs ...*build.Package) ([]*build.Package, er
 				if imp == "C" {
 					continue
 				}
-				pkg, err := ctx.Import(imp, wd, build.AllowVendor)
-				if pkg.Goroot {
+				ipkg, err := ctx.Import(imp, wd, build.AllowVendor)
+				if ipkg.Goroot {
 					continue
 				}
 				if err != nil {
-					log.Printf("WARN: unsatisfied dep: %s\n", imp)
+					log.Printf("WARN: unsatisfied dep: %s for %s\n", imp, pkg.ImportPath)
 					continue
 				}
-				if _, ok := pkgCache[pkg.ImportPath]; ok {
+				if _, ok := pkgCache[ipkg.ImportPath]; ok {
 					continue
 				}
-				newDeps = append(newDeps, pkg)
+				newDeps = append(newDeps, ipkg)
 			}
 			pkgCache[pkg.ImportPath] = pkg
 		}
