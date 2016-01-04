@@ -1,10 +1,12 @@
 package main
 
 import (
+	"fmt"
 	"go/build"
 	"log"
 	"os"
 	"path/filepath"
+	"strings"
 )
 
 var (
@@ -15,13 +17,19 @@ func init() {
 	ctx.UseAllFiles = true
 }
 
-func collectAllDeps(wd string, initPkgs ...*build.Package) ([]*build.Package, error) {
+func collectAllDeps(wd string, downloadFunc func(importPath, dir string) error, initPkgs ...*build.Package) ([]*build.Package, error) {
 	pkgCache := make(map[string]*build.Package)
 	var deps []*build.Package
 	for _, pkg := range initPkgs {
 		pkgCache[pkg.ImportPath] = pkg
 		deps = append(deps, pkg)
 	}
+	gopath := os.Getenv("GOPATH")
+	rel, err := filepath.Rel(filepath.Join(gopath, "src"), wd)
+	if err != nil {
+		return nil, err
+	}
+	vdImportPrefix := filepath.Join(rel, "vendor")
 	for {
 		var newDeps []*build.Package
 		for _, pkg := range deps {
@@ -36,9 +44,21 @@ func collectAllDeps(wd string, initPkgs ...*build.Package) ([]*build.Package, er
 				if ipkg.Goroot {
 					continue
 				}
-				if err != nil {
-					log.Printf("WARN: unsatisfied dep: %s for %s\n", imp, pkg.ImportPath)
-					continue
+				if err != nil || !strings.HasPrefix(ipkg.ImportPath, rel) {
+					if downloadFunc == nil {
+						log.Printf("WARN: unsatisfied dep: %s for %s\n", imp, pkg.ImportPath)
+						continue
+					}
+					if err := downloadFunc(imp, filepath.Join(wd, vendorDir)); err != nil {
+						return nil, err
+					}
+					dlPkg, err := ctx.Import(imp, wd, build.AllowVendor)
+					if err != nil {
+						return nil, err
+					}
+					if !strings.HasPrefix(dlPkg.ImportPath, vdImportPrefix) {
+						return nil, fmt.Errorf("%s was not vendored properly", imp)
+					}
 				}
 				if _, ok := pkgCache[ipkg.ImportPath]; ok {
 					continue
