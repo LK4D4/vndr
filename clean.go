@@ -6,8 +6,11 @@ import (
 	"os"
 	"path/filepath"
 	"sort"
+
+	"github.com/LK4D4/vndr/godl"
 )
 
+// cleanVendor removes files from unused pacakges and non-go files
 func cleanVendor(vendorDir string, realDeps []*build.Package) error {
 	realPaths := make(map[string]bool)
 	realPaths[vendorDir] = true
@@ -23,6 +26,7 @@ func cleanVendor(vendorDir string, realDeps []*build.Package) error {
 		return err
 	}
 	sort.Sort(sort.Reverse(sort.StringSlice(paths)))
+	// iterate over paths (longer first)
 	for _, p := range paths {
 		fi, err := os.Stat(p)
 		if err != nil {
@@ -51,6 +55,18 @@ func cleanVendor(vendorDir string, realDeps []*build.Package) error {
 		}
 		// remove all files if they're not in dependency paths
 		if err := os.RemoveAll(p); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func cleanVCS(v *godl.VCS) error {
+	if err := os.RemoveAll(filepath.Join(v.Root, "."+v.Type)); err != nil {
+		return err
+	}
+	for _, otherVndr := range []string{"vendor", "Godeps", "_vendor"} {
+		if err := os.RemoveAll(filepath.Join(v.Root, otherVndr)); err != nil {
 			return err
 		}
 	}

@@ -60,11 +60,13 @@ func main() {
 				dlDeps = append(dlDeps, vcs)
 				return nil
 			}
+			// traverse dependency tree with on-fly downloading
 			initPkgs, err := collectAllDeps(wd, dlFunc, initPkgs...)
 			if err != nil {
 				log.Fatalf("Error on collecting all dependencies: %v", err)
 			}
 			log.Printf("All dependencies downloaded")
+			// cleanup vcs and vendor dirs
 			deps, err := cleanDeps(dlDeps)
 			if err != nil {
 				log.Fatal(err)
@@ -95,6 +97,7 @@ func main() {
 		log.Println("Dependencies downloaded")
 	}
 	log.Println("Collecting all dependencies")
+	// pkgs != nil if init was used
 	if pkgs != nil {
 		upkgs, err := collectAllDeps(wd, nil, initPkgs...)
 		if err != nil {

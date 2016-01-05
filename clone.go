@@ -25,7 +25,7 @@ func parseDeps(r io.Reader, vendorDir string) ([]depEntry, error) {
 	var deps []depEntry
 	s := bufio.NewScanner(r)
 	for s.Scan() {
-		parts := strings.Split(s.Text(), " ")
+		parts := strings.Fields(s.Text())
 		if len(parts) != 2 {
 			return nil, errors.New("invalid config format")
 		}

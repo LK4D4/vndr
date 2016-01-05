@@ -44,6 +44,7 @@ func collectAllDeps(wd string, downloadFunc func(importPath, dir string) error, 
 				if ipkg.Goroot {
 					continue
 				}
+				// if package not found or it is package for current GOPATH, we should try to download it
 				if err != nil || !strings.HasPrefix(ipkg.ImportPath, rel) {
 					if downloadFunc == nil {
 						log.Printf("WARN: unsatisfied dep: %s for %s\n", imp, pkg.ImportPath)

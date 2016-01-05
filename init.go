@@ -6,7 +6,6 @@ import (
 	"io/ioutil"
 	"os"
 	"os/exec"
-	"path/filepath"
 	"sort"
 	"strings"
 
@@ -82,18 +81,6 @@ func cleanDeps(vcsDeps []*godl.VCS) ([]depEntry, error) {
 		})
 	}
 	return deps, nil
-}
-
-func cleanVCS(v *godl.VCS) error {
-	if err := os.RemoveAll(filepath.Join(v.Root, "."+v.Type)); err != nil {
-		return err
-	}
-	for _, otherVndr := range []string{"vendor", "Godeps", "_vendor"} {
-		if err := os.RemoveAll(filepath.Join(v.Root, otherVndr)); err != nil {
-			return err
-		}
-	}
-	return nil
 }
 
 func writeConfig(deps []depEntry, cfgFile string) error {
