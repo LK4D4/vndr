@@ -12,4 +12,5 @@ vndr
 ```
 
 It downloads all dependencies to `vendor/` directory. It uses new vendor layout
-from go1.6 and also relies on go1.6 features. So, you need at least `go1.6beta1`.
+from go1.6 and also relies on go1.6 features. So, you need at least `go1.6beta1`
+to use it.
