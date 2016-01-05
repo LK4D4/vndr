@@ -74,7 +74,7 @@ func cloneAll(vd string, ds []depEntry) error {
 }
 
 func cloneDep(vd string, d depEntry) error {
-	log.Printf("\tClone %s", d.importPath)
+	log.Printf("\tClone %s %s", d.importPath, d.rev)
 	defer log.Printf("\tFinished clone %s", d.importPath)
 	vcs, err := godl.Download(d.importPath, vd, d.rev)
 	if err != nil {
