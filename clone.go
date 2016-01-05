@@ -2,7 +2,6 @@ package main
 
 import (
 	"bufio"
-	"errors"
 	"fmt"
 	"io"
 	"log"
@@ -25,9 +24,18 @@ func parseDeps(r io.Reader, vendorDir string) ([]depEntry, error) {
 	var deps []depEntry
 	s := bufio.NewScanner(r)
 	for s.Scan() {
-		parts := strings.Fields(s.Text())
+		ln := strings.TrimSpace(s.Text())
+		if strings.HasPrefix(ln, "#") || ln == "" {
+			continue
+		}
+		cidx := strings.Index(ln, "#")
+		if cidx > 0 {
+			ln = ln[:cidx]
+		}
+		ln = strings.TrimSpace(ln)
+		parts := strings.Fields(ln)
 		if len(parts) != 2 {
-			return nil, errors.New("invalid config format")
+			return nil, fmt.Errorf("invalid config format: %s", ln)
 		}
 		d := depEntry{
 			importPath: parts[0],
