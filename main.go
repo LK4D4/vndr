@@ -98,7 +98,7 @@ func main() {
 	}
 	log.Println("Collecting all dependencies")
 	// pkgs != nil if init was used
-	if pkgs != nil {
+	if pkgs == nil {
 		upkgs, err := collectAllDeps(wd, nil, initPkgs...)
 		if err != nil {
 			log.Fatalf("Error on collecting all dependencies: %v", err)
