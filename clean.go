@@ -6,6 +6,7 @@ import (
 	"os"
 	"path/filepath"
 	"sort"
+	"strings"
 
 	"github.com/LK4D4/vndr/godl"
 )
@@ -13,13 +14,38 @@ import (
 // cleanVendor removes files from unused pacakges and non-go files
 func cleanVendor(vendorDir string, realDeps []*build.Package) error {
 	realPaths := make(map[string]bool)
-	realPaths[vendorDir] = true
 	for _, pkg := range realDeps {
 		realPaths[pkg.Dir] = true
 	}
 	var paths []string
 	err := filepath.Walk(vendorDir, func(path string, i os.FileInfo, err error) error {
-		paths = append(paths, path)
+		if path == vendorDir {
+			return nil
+		}
+		if err != nil {
+			return nil
+		}
+		if i.IsDir() {
+			if i.Name() == "testdata" {
+				return os.RemoveAll(path)
+			}
+			if !realPaths[path] {
+				paths = append(paths, path)
+			}
+			return nil
+		}
+		if i.Name() == "LICENSE" || i.Name() == "COPYING" {
+			return nil
+		}
+		if !realPaths[filepath.Dir(path)] {
+			return os.Remove(path)
+		}
+		if strings.HasSuffix(path, "_test.go") {
+			return os.Remove(path)
+		}
+		if filepath.Ext(path) == ".go" || filepath.Ext(path) == ".c" || filepath.Ext(path) == ".s" {
+			return nil
+		}
 		return nil
 	})
 	if err != nil {
@@ -28,29 +54,19 @@ func cleanVendor(vendorDir string, realDeps []*build.Package) error {
 	sort.Sort(sort.Reverse(sort.StringSlice(paths)))
 	// iterate over paths (longer first)
 	for _, p := range paths {
-		fi, err := os.Stat(p)
+		// at this point we cleaned all files from unused deps dirs
+		lst, err := ioutil.ReadDir(p)
 		if err != nil {
 			return err
 		}
-		if fi.IsDir() {
-			// at this point we cleaned all files from unused deps dirs
-			lst, err := ioutil.ReadDir(p)
-			if err != nil {
-				return err
+		var keepDir bool
+		for _, fi := range lst {
+			if fi.IsDir() {
+				keepDir = true
+				break
 			}
-			if len(lst) > 1 {
-				continue
-			}
-			// remove empty dirs and dirs with sole LICENSE file
-			if len(lst) == 0 || (len(lst) == 1 && lst[0].Name() == "LICENSE") {
-				if err := os.RemoveAll(p); err != nil {
-					return err
-				}
-			}
-			continue
-
 		}
-		if realPaths[filepath.Dir(p)] {
+		if keepDir {
 			continue
 		}
 		// remove all files if they're not in dependency paths
