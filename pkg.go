@@ -40,7 +40,7 @@ func collectAllDeps(wd string, downloadFunc func(importPath, dir string) error, 
 				if imp == "C" {
 					continue
 				}
-				ipkg, err := ctx.Import(imp, wd, build.AllowVendor)
+				ipkg, err := ctx.Import(imp, wd, 0)
 				if ipkg.Goroot {
 					continue
 				}
@@ -53,7 +53,7 @@ func collectAllDeps(wd string, downloadFunc func(importPath, dir string) error, 
 					if err := downloadFunc(imp, filepath.Join(wd, vendorDir)); err != nil {
 						return nil, err
 					}
-					dlPkg, err := ctx.Import(imp, wd, build.AllowVendor)
+					dlPkg, err := ctx.Import(imp, wd, 0)
 					if err != nil {
 						return nil, err
 					}
