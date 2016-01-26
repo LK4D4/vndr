@@ -17,6 +17,21 @@ func init() {
 	ctx.UseAllFiles = true
 }
 
+func removeMain(mpErr *build.MultiplePackageError, imp, wd string) (*build.Package, error) {
+	for i, pkgName := range mpErr.Packages {
+		if pkgName == "main" {
+			if err := os.Remove(filepath.Join(mpErr.Dir, mpErr.Files[i])); err != nil {
+				return nil, err
+			}
+		}
+	}
+	pkg, err := ctx.Import(imp, wd, 0)
+	if err != nil {
+		return nil, err
+	}
+	return pkg, nil
+}
+
 func collectAllDeps(wd string, downloadFunc func(importPath, dir string) error, initPkgs ...*build.Package) ([]*build.Package, error) {
 	pkgCache := make(map[string]*build.Package)
 	var deps []*build.Package
@@ -44,6 +59,13 @@ func collectAllDeps(wd string, downloadFunc func(importPath, dir string) error, 
 				if ipkg.Goroot {
 					continue
 				}
+				mpErr, ok := err.(*build.MultiplePackageError)
+				if ok {
+					ipkg, err = removeMain(mpErr, imp, wd)
+					if err != nil {
+						return nil, err
+					}
+				}
 				// if package not found or it is package for current GOPATH, we should try to download it
 				if err != nil || !strings.HasPrefix(ipkg.ImportPath, rel) {
 					if downloadFunc == nil {
@@ -55,11 +77,18 @@ func collectAllDeps(wd string, downloadFunc func(importPath, dir string) error, 
 					}
 					dlPkg, err := ctx.Import(imp, wd, 0)
 					if err != nil {
-						return nil, err
+						mpErr, ok := err.(*build.MultiplePackageError)
+						if ok {
+							dlPkg, err = removeMain(mpErr, imp, wd)
+							if err != nil {
+								return nil, err
+							}
+						}
 					}
 					if !strings.HasPrefix(dlPkg.ImportPath, vdImportPrefix) {
 						return nil, fmt.Errorf("%s was not vendored properly", imp)
 					}
+					ipkg = dlPkg
 				}
 				if _, ok := pkgCache[ipkg.ImportPath]; ok {
 					continue
