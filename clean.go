@@ -11,6 +11,20 @@ import (
 	"github.com/LK4D4/vndr/godl"
 )
 
+func isCDir(path string) bool {
+	fis, err := ioutil.ReadDir(path)
+	if err != nil {
+		return false
+	}
+	for _, fi := range fis {
+		ext := filepath.Ext(fi.Name())
+		if ext == ".c" || ext == ".h" {
+			return true
+		}
+	}
+	return false
+}
+
 // cleanVendor removes files from unused pacakges and non-go files
 func cleanVendor(vendorDir string, realDeps []*build.Package) error {
 	realPaths := make(map[string]bool)
@@ -29,6 +43,10 @@ func cleanVendor(vendorDir string, realDeps []*build.Package) error {
 			if i.Name() == "testdata" {
 				return os.RemoveAll(path)
 			}
+			if isCDir(path) {
+				realPaths[path] = true
+				return nil
+			}
 			if !realPaths[path] {
 				paths = append(paths, path)
 			}
@@ -42,9 +60,6 @@ func cleanVendor(vendorDir string, realDeps []*build.Package) error {
 		}
 		if strings.HasSuffix(path, "_test.go") {
 			return os.Remove(path)
-		}
-		if filepath.Ext(path) == ".go" || filepath.Ext(path) == ".c" || filepath.Ext(path) == ".s" {
-			return nil
 		}
 		return nil
 	})
