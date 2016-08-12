@@ -16,13 +16,22 @@ func isCDir(path string) bool {
 	if err != nil {
 		return false
 	}
+	var hFound bool
 	for _, fi := range fis {
 		ext := filepath.Ext(fi.Name())
-		if ext == ".c" || ext == ".h" {
-			return true
+		if ext == ".cc" || ext == ".cpp" || ext == ".py" {
+			return false
+		}
+		if ext == ".h" {
+			hFound = true
 		}
 	}
-	return false
+	return hFound
+}
+
+func isGoFile(path string) bool {
+	ext := filepath.Ext(path)
+	return ext == ".go" || ext == ".c" || ext == ".h"
 }
 
 // cleanVendor removes files from unused pacakges and non-go files
@@ -38,6 +47,9 @@ func cleanVendor(vendorDir string, realDeps []*build.Package) error {
 		}
 		if err != nil {
 			return nil
+		}
+		if strings.HasPrefix(i.Name(), ".") || strings.HasPrefix(i.Name(), "_") {
+			return os.RemoveAll(path)
 		}
 		if i.IsDir() {
 			if i.Name() == "testdata" {
@@ -55,10 +67,8 @@ func cleanVendor(vendorDir string, realDeps []*build.Package) error {
 		if i.Name() == "LICENSE" || i.Name() == "COPYING" {
 			return nil
 		}
-		if !realPaths[filepath.Dir(path)] {
-			return os.Remove(path)
-		}
-		if strings.HasSuffix(path, "_test.go") {
+		// remove files from non-deps, non-go files and test files
+		if !realPaths[filepath.Dir(path)] || !isGoFile(path) || strings.HasSuffix(path, "_test.go") {
 			return os.Remove(path)
 		}
 		return nil
@@ -67,24 +77,17 @@ func cleanVendor(vendorDir string, realDeps []*build.Package) error {
 		return err
 	}
 	sort.Sort(sort.Reverse(sort.StringSlice(paths)))
-	// iterate over paths (longer first)
+	// iterate over paths (longest first)
 	for _, p := range paths {
 		// at this point we cleaned all files from unused deps dirs
 		lst, err := ioutil.ReadDir(p)
 		if err != nil {
 			return err
 		}
-		var keepDir bool
-		for _, fi := range lst {
-			if fi.IsDir() {
-				keepDir = true
-				break
-			}
-		}
-		if keepDir {
+		if len(lst) != 0 {
 			continue
 		}
-		// remove all files if they're not in dependency paths
+		// remove all directories if they're not in dependency paths
 		if err := os.RemoveAll(p); err != nil {
 			return err
 		}

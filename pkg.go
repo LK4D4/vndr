@@ -1,12 +1,10 @@
 package main
 
 import (
-	"fmt"
 	"go/build"
 	"log"
 	"os"
 	"path/filepath"
-	"strings"
 )
 
 var (
@@ -39,12 +37,6 @@ func collectAllDeps(wd string, downloadFunc func(importPath, dir string) error, 
 		pkgCache[pkg.ImportPath] = pkg
 		deps = append(deps, pkg)
 	}
-	gopath := os.Getenv("GOPATH")
-	rel, err := filepath.Rel(filepath.Join(gopath, "src"), wd)
-	if err != nil {
-		return nil, err
-	}
-	vdImportPrefix := filepath.Join(rel, "vendor")
 	for {
 		var newDeps []*build.Package
 		for _, pkg := range deps {
@@ -59,36 +51,10 @@ func collectAllDeps(wd string, downloadFunc func(importPath, dir string) error, 
 				if ipkg.Goroot {
 					continue
 				}
-				mpErr, ok := err.(*build.MultiplePackageError)
-				if ok {
-					ipkg, err = removeMain(mpErr, imp, wd)
-					if err != nil {
-						return nil, err
+				if err != nil {
+					if _, ok := err.(*build.MultiplePackageError); !ok {
+						log.Printf("WARNING: %v", err)
 					}
-				}
-				// if package not found or it is package for current GOPATH, we should try to download it
-				if err != nil || !strings.HasPrefix(ipkg.ImportPath, rel) {
-					if downloadFunc == nil {
-						log.Printf("WARN: unsatisfied dep: %s for %s\n", imp, pkg.ImportPath)
-						continue
-					}
-					if err := downloadFunc(imp, filepath.Join(wd, vendorDir)); err != nil {
-						return nil, err
-					}
-					dlPkg, err := ctx.Import(imp, wd, 0)
-					if err != nil {
-						mpErr, ok := err.(*build.MultiplePackageError)
-						if ok {
-							dlPkg, err = removeMain(mpErr, imp, wd)
-							if err != nil {
-								return nil, err
-							}
-						}
-					}
-					if !strings.HasPrefix(dlPkg.ImportPath, vdImportPrefix) {
-						return nil, fmt.Errorf("%s was not vendored properly", imp)
-					}
-					ipkg = dlPkg
 				}
 				if _, ok := pkgCache[ipkg.ImportPath]; ok {
 					continue
@@ -124,11 +90,13 @@ func collectPkgs(dir string) ([]*build.Package, error) {
 		}
 		pkg, err := ctx.ImportDir(path, build.ImportMode(0))
 		if err != nil {
-			// not a package
-			if _, ok := err.(*build.NoGoError); ok {
-				return nil
+			if _, ok := err.(*build.MultiplePackageError); !ok {
+				// not a package
+				if _, ok := err.(*build.NoGoError); ok {
+					return nil
+				}
+				return err
 			}
-			return err
 		}
 		pkgs = append(pkgs, pkg)
 		return nil

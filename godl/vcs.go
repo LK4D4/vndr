@@ -345,8 +345,8 @@ func (v *vcsCmd) ping(scheme, repo string) error {
 // The parent of dir must exist; dir must not.
 func (v *vcsCmd) create(dir, repo string) error {
 	for _, cmd := range v.createCmd {
-		if err := v.run(".", cmd, "dir", dir, "repo", repo); err != nil {
-			return err
+		if out, err := v.runOutput(".", cmd, "dir", dir, "repo", repo); err != nil {
+			return fmt.Errorf("Err: %v, out: %s", err, out)
 		}
 	}
 	return nil
@@ -354,8 +354,8 @@ func (v *vcsCmd) create(dir, repo string) error {
 
 func (v *vcsCmd) createRev(dir, repo, rev string) error {
 	for _, cmd := range v.createRevCmd {
-		if err := v.run(".", cmd, "dir", dir, "repo", repo, "rev", rev); err != nil {
-			return err
+		if out, err := v.runOutput(".", cmd, "dir", dir, "repo", repo, "rev", rev); err != nil {
+			return fmt.Errorf("Err: %v, out: %s", err, out)
 		}
 	}
 	return nil

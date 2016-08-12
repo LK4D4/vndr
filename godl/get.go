@@ -19,7 +19,7 @@ type VCS struct {
 	Type       string
 }
 
-func Download(importPath, target, rev string) (*VCS, error) {
+func Download(importPath, repoPath, target, rev string) (*VCS, error) {
 	security := secure
 	// Analyze the import path to determine the version control system,
 	// repository, and the import path for the root of the repository.
@@ -28,6 +28,9 @@ func Download(importPath, target, rev string) (*VCS, error) {
 		return nil, err
 	}
 	root := filepath.Join(target, rr.root)
+	if repoPath != "" {
+		rr.repo = repoPath
+	}
 
 	if _, err := os.Stat(root); err == nil {
 		return nil, fmt.Errorf("%s exists", root)

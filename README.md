@@ -1,18 +1,11 @@
 # VNDR
 
 Vndr is simple vendoring tool, which is inspired by docker vendor script.
-It has only two options: init new vendor and update it.
-You can init your repo with config and vendor dir by:
+Vndr has no options.
+For initiating you will need config `vndr.cfg` with lines like:
 ```
-vndr init
-```
-and update after modifying (change revision or add new dependency) `vndr.cfg`
-with just
-```
-vndr
-```
+# Import path             | revision                               | Repository(optional)
+github.com/example/example 03a4d9dcf2f92eae8e90ed42aa2656f63fdd0b14 https://github.com/LK4D4/example.git
 
-It downloads all dependencies to `vendor/` directory. It uses new vendor layout
-from `go1.6` (GO15VENDOREXPERIMENT) and also relies on `go1.6` features. So,
-you need at least `go1.6beta1` to compile `vndr` and `GO15VENDOREXPERIMENT=1` in
-`go1.5` to compile your project.
+```
+Just set `$GOPATH` and run `vndr` in your repository with `vndr.cfg`.

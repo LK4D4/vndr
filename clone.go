@@ -14,6 +14,7 @@ import (
 type depEntry struct {
 	importPath string
 	rev        string
+	repoPath   string
 }
 
 func (d depEntry) String() string {
@@ -34,12 +35,15 @@ func parseDeps(r io.Reader, vendorDir string) ([]depEntry, error) {
 		}
 		ln = strings.TrimSpace(ln)
 		parts := strings.Fields(ln)
-		if len(parts) != 2 {
+		if len(parts) != 2 && len(parts) != 3 {
 			return nil, fmt.Errorf("invalid config format: %s", ln)
 		}
 		d := depEntry{
 			importPath: parts[0],
 			rev:        parts[1],
+		}
+		if len(parts) == 3 {
+			d.repoPath = parts[2]
 		}
 		deps = append(deps, d)
 	}
@@ -74,11 +78,15 @@ func cloneAll(vd string, ds []depEntry) error {
 }
 
 func cloneDep(vd string, d depEntry) error {
-	log.Printf("\tClone %s %s", d.importPath, d.rev)
+	if d.repoPath != "" {
+		log.Printf("\tClone %s to %s, revision %s", d.repoPath, d.importPath, d.rev)
+	} else {
+		log.Printf("\tClone %s, revision %s", d.importPath, d.rev)
+	}
 	defer log.Printf("\tFinished clone %s", d.importPath)
-	vcs, err := godl.Download(d.importPath, vd, d.rev)
+	vcs, err := godl.Download(d.importPath, d.repoPath, vd, d.rev)
 	if err != nil {
-		return err
+		return fmt.Errorf("%s: %v", d.importPath, err)
 	}
 	return cleanVCS(vcs)
 }
