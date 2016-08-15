@@ -53,7 +53,7 @@ func collectAllDeps(wd string, initPkgs ...*build.Package) ([]*build.Package, er
 				}
 				if err != nil {
 					if _, ok := err.(*build.MultiplePackageError); !ok {
-						log.Printf("WARNING: %v", err)
+						log.Printf("\tWARNING %s: %v", ipkg.ImportPath, err)
 					}
 				}
 				if _, ok := pkgCache[ipkg.ImportPath]; ok {
