@@ -32,8 +32,8 @@ func Download(importPath, repoPath, target, rev string) (*VCS, error) {
 		rr.repo = repoPath
 	}
 
-	if _, err := os.Stat(root); err == nil {
-		return nil, fmt.Errorf("%s exists", root)
+	if err := os.RemoveAll(root); err != nil {
+		return nil, fmt.Errorf("remove package root: %v", err)
 	}
 	// Some version control tools require the parent of the target to exist.
 	parent, _ := filepath.Split(root)

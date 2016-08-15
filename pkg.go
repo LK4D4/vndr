@@ -30,7 +30,7 @@ func removeMain(mpErr *build.MultiplePackageError, imp, wd string) (*build.Packa
 	return pkg, nil
 }
 
-func collectAllDeps(wd string, downloadFunc func(importPath, dir string) error, initPkgs ...*build.Package) ([]*build.Package, error) {
+func collectAllDeps(wd string, initPkgs ...*build.Package) ([]*build.Package, error) {
 	pkgCache := make(map[string]*build.Package)
 	var deps []*build.Package
 	for _, pkg := range initPkgs {

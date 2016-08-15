@@ -21,7 +21,7 @@ func (d depEntry) String() string {
 	return fmt.Sprintf("%s %s\n", d.importPath, d.rev)
 }
 
-func parseDeps(r io.Reader, vendorDir string) ([]depEntry, error) {
+func parseDeps(r io.Reader) ([]depEntry, error) {
 	var deps []depEntry
 	s := bufio.NewScanner(r)
 	for s.Scan() {
