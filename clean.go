@@ -31,7 +31,7 @@ func isCDir(path string) bool {
 
 func isGoFile(path string) bool {
 	ext := filepath.Ext(path)
-	return ext == ".go" || ext == ".c" || ext == ".h"
+	return ext == ".go" || ext == ".c" || ext == ".h" || ext == ".s"
 }
 
 // cleanVendor removes files from unused pacakges and non-go files
@@ -64,7 +64,7 @@ func cleanVendor(vendorDir string, realDeps []*build.Package) error {
 			}
 			return nil
 		}
-		if i.Name() == "LICENSE" || i.Name() == "COPYING" {
+		if i.Name() == "LICENSE" || i.Name() == "COPYING" || i.Name() == "PATENTS" {
 			return nil
 		}
 		// remove files from non-deps, non-go files and test files
