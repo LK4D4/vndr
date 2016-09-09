@@ -10,7 +10,7 @@ import (
 
 const (
 	vendorDir  = "vendor"
-	configFile = "vndr.cfg"
+	configFile = "vendor.conf"
 	tmpDir     = ".vndr-tmp"
 )
 
