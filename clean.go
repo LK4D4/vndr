@@ -99,10 +99,20 @@ func cleanVCS(v *godl.VCS) error {
 	if err := os.RemoveAll(filepath.Join(v.Root, "."+v.Type)); err != nil {
 		return err
 	}
-	for _, otherVndr := range []string{"vendor", "Godeps", "_vendor"} {
-		if err := os.RemoveAll(filepath.Join(v.Root, otherVndr)); err != nil {
-			return err
+	return filepath.Walk(v.Root, func(path string, i os.FileInfo, err error) error {
+		if path == vendorDir {
+			return nil
 		}
-	}
-	return nil
+		if !i.IsDir() {
+			return nil
+		}
+		name := i.Name()
+		if name == "vendor" || name == "Godeps" || name == "_vendor" {
+			if err := os.RemoveAll(path); err != nil {
+				return err
+			}
+			return filepath.SkipDir
+		}
+		return nil
+	})
 }
