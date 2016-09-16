@@ -18,7 +18,9 @@ func init() {
 func collectAllDeps(wd string, initPkgs ...*build.Package) ([]*build.Package, error) {
 	pkgCache := make(map[string]*build.Package)
 	var deps []*build.Package
+	initPkgsMap := make(map[*build.Package]bool)
 	for _, pkg := range initPkgs {
+		initPkgsMap[pkg] = true
 		pkgCache[pkg.ImportPath] = pkg
 		deps = append(deps, pkg)
 	}
@@ -50,8 +52,10 @@ func collectAllDeps(wd string, initPkgs ...*build.Package) ([]*build.Package, er
 				pkgCache[pkg.ImportPath] = pkg
 			}
 			handleImports(pkg.Imports)
-			handleImports(pkg.TestImports)
-			handleImports(pkg.XTestImports)
+			if initPkgsMap[pkg] {
+				handleImports(pkg.TestImports)
+				handleImports(pkg.XTestImports)
+			}
 		}
 		if len(newDeps) == 0 {
 			break
