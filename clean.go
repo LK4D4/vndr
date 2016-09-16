@@ -31,7 +31,7 @@ func isCDir(path string) bool {
 
 func isGoFile(path string) bool {
 	ext := filepath.Ext(path)
-	return ext == ".go" || ext == ".c" || ext == ".h" || ext == ".s"
+	return ext == ".go" || ext == ".c" || ext == ".h" || ext == ".s" || ext == ".proto"
 }
 
 // cleanVendor removes files from unused pacakges and non-go files
