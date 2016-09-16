@@ -15,21 +15,6 @@ func init() {
 	ctx.UseAllFiles = true
 }
 
-func removeMain(mpErr *build.MultiplePackageError, imp, wd string) (*build.Package, error) {
-	for i, pkgName := range mpErr.Packages {
-		if pkgName == "main" {
-			if err := os.Remove(filepath.Join(mpErr.Dir, mpErr.Files[i])); err != nil {
-				return nil, err
-			}
-		}
-	}
-	pkg, err := ctx.Import(imp, wd, 0)
-	if err != nil {
-		return nil, err
-	}
-	return pkg, nil
-}
-
 func collectAllDeps(wd string, initPkgs ...*build.Package) ([]*build.Package, error) {
 	pkgCache := make(map[string]*build.Package)
 	var deps []*build.Package
