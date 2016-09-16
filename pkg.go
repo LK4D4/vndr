@@ -28,25 +28,30 @@ func collectAllDeps(wd string, initPkgs ...*build.Package) ([]*build.Package, er
 			if pkg.Goroot {
 				continue
 			}
-			for _, imp := range pkg.Imports {
-				if imp == "C" {
-					continue
-				}
-				ipkg, err := ctx.Import(imp, wd, 0)
-				if ipkg.Goroot {
-					continue
-				}
-				if err != nil {
-					if _, ok := err.(*build.MultiplePackageError); !ok {
-						log.Printf("\tWARNING %s: %v", ipkg.ImportPath, err)
+			handleImports := func(pkgs []string) {
+				for _, imp := range pkgs {
+					if imp == "C" {
+						continue
 					}
+					ipkg, err := ctx.Import(imp, wd, 0)
+					if ipkg.Goroot {
+						continue
+					}
+					if err != nil {
+						if _, ok := err.(*build.MultiplePackageError); !ok {
+							log.Printf("\tWARNING %s: %v", ipkg.ImportPath, err)
+						}
+					}
+					if _, ok := pkgCache[ipkg.ImportPath]; ok {
+						continue
+					}
+					newDeps = append(newDeps, ipkg)
 				}
-				if _, ok := pkgCache[ipkg.ImportPath]; ok {
-					continue
-				}
-				newDeps = append(newDeps, ipkg)
+				pkgCache[pkg.ImportPath] = pkg
 			}
-			pkgCache[pkg.ImportPath] = pkg
+			handleImports(pkg.Imports)
+			handleImports(pkg.TestImports)
+			handleImports(pkg.XTestImports)
 		}
 		if len(newDeps) == 0 {
 			break
