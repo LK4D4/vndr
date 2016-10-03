@@ -63,6 +63,10 @@ func getDeps() ([]depEntry, error) {
 }
 
 func main() {
+	start := time.Now()
+	defer func() {
+		log.Printf("Running time: %v", time.Since(start))
+	}()
 	if os.Getenv("GOPATH") == "" {
 		log.Fatal("GOPATH must be set")
 	}
@@ -76,7 +80,11 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
-	log.Println("Removing old vendor directory")
+	log.Println("Collecting initial packages")
+	initPkgs, err := collectPkgs(wd)
+	if err != nil {
+		log.Fatalf("Error collecting initial packages: %v", err)
+	}
 	vd := filepath.Join(wd, vendorDir)
 	log.Println("Download dependencies")
 	if err := cloneAll(vd, deps); err != nil {
@@ -84,16 +92,10 @@ func main() {
 	}
 	log.Println("Dependencies downloaded")
 	log.Println("Collecting all dependencies")
-	start := time.Now()
-	initPkgs, err := collectPkgs(wd)
-	if err != nil {
-		log.Fatalf("Error collecting initial packages: %v", err)
-	}
 	pkgs, err := collectAllDeps(wd, initPkgs...)
 	if err != nil {
 		log.Fatalf("Error on collecting all dependencies: %v", err)
 	}
-	log.Printf("All dependencies collected: %v", time.Since(start))
 	log.Println("Clean vendor dir from unused packages")
 	if err := cleanVendor(vd, pkgs); err != nil {
 		log.Fatal(err)
