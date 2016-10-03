@@ -1,10 +1,11 @@
 package main
 
 import (
-	"go/build"
 	"log"
 	"os"
 	"path/filepath"
+
+	"github.com/LK4D4/vndr/build"
 )
 
 var (

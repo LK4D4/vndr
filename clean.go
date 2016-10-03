@@ -1,13 +1,13 @@
 package main
 
 import (
-	"go/build"
 	"io/ioutil"
 	"os"
 	"path/filepath"
 	"sort"
 	"strings"
 
+	"github.com/LK4D4/vndr/build"
 	"github.com/LK4D4/vndr/godl"
 )
 
