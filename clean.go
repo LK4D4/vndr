@@ -34,6 +34,13 @@ func isGoFile(path string) bool {
 	return ext == ".go" || ext == ".c" || ext == ".h" || ext == ".s" || ext == ".proto"
 }
 
+var licenseFiles = map[string]bool{
+	"LICENSE": true,
+	"COPYING": true,
+	"PATENTS": true,
+	"NOTICE":  true,
+}
+
 // cleanVendor removes files from unused pacakges and non-go files
 func cleanVendor(vendorDir string, realDeps []*build.Package) error {
 	realPaths := make(map[string]bool)
@@ -64,7 +71,9 @@ func cleanVendor(vendorDir string, realDeps []*build.Package) error {
 			}
 			return nil
 		}
-		if i.Name() == "LICENSE" || i.Name() == "COPYING" || i.Name() == "PATENTS" {
+
+		// keep files for licenses
+		if licenseFiles[i.Name()] {
 			return nil
 		}
 		// remove files from non-deps, non-go files and test files
