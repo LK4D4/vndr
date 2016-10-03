@@ -24,22 +24,13 @@ func init() {
 }
 
 func validateArgs() {
-	args := flag.Args()
-	if len(args) != 0 && len(args) != 2 && len(args) != 3 {
+	if len(flag.Args()) > 3 {
 		flag.Usage()
 		os.Exit(2)
 	}
 }
 
 func getDeps() ([]depEntry, error) {
-	if len(flag.Args()) != 0 {
-		dep := depEntry{
-			importPath: flag.Arg(0),
-			rev:        flag.Arg(1),
-			repoPath:   flag.Arg(2),
-		}
-		return []depEntry{dep}, nil
-	}
 	cfg, err := os.Open(configFile)
 	if err != nil {
 		return nil, fmt.Errorf("Failed to open config file: %v", err)
@@ -47,6 +38,27 @@ func getDeps() ([]depEntry, error) {
 	deps, err := parseDeps(cfg)
 	if err != nil {
 		return nil, fmt.Errorf("Failed to parse config: %v", err)
+	}
+	if len(flag.Args()) != 0 {
+		dep := depEntry{
+			importPath: flag.Arg(0),
+			rev:        flag.Arg(1),
+			repoPath:   flag.Arg(2),
+		}
+		// if there is no revision, try to find it in config
+		if dep.rev == "" {
+			for _, d := range deps {
+				if d.importPath == dep.importPath {
+					dep.rev = d.rev
+					dep.repoPath = d.repoPath
+					break
+				}
+			}
+			if dep.rev == "" {
+				return nil, fmt.Errorf("Failed to find %s in config file and revision was not specified", dep.importPath)
+			}
+		}
+		return []depEntry{dep}, nil
 	}
 	return deps, nil
 }
