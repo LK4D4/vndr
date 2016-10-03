@@ -3,15 +3,7 @@
 // license that can be found in the LICENSE file.
 
 // This is copy of package from golang repo
-// here is diff of changes:
-// 762c762
-// <                       pkgerr = &MultiplePackageError{
-// ---
-// >                       badFile(&MultiplePackageError{
-// 766c766
-// <                       }
-// ---
-// >                       })
+// It is modified to not treat MultiplePackageError as "bad".
 
 package build
 
@@ -262,44 +254,6 @@ func (ctxt *Context) SrcDirs() []string {
 	return all
 }
 
-// Default is the default Context for builds.
-// It uses the GOARCH, GOOS, GOROOT, and GOPATH environment variables
-// if set, or else the compiled code's GOARCH, GOOS, and GOROOT.
-var Default Context = defaultContext()
-
-func defaultContext() Context {
-	var c Context
-
-	c.GOARCH = envOr("GOARCH", runtime.GOARCH)
-	c.GOOS = envOr("GOOS", runtime.GOOS)
-	c.GOROOT = pathpkg.Clean(runtime.GOROOT())
-	c.GOPATH = envOr("GOPATH", "")
-	c.Compiler = runtime.Compiler
-
-	// Each major Go release in the Go 1.x series should add a tag here.
-	// Old tags should not be removed. That is, the go1.x tag is present
-	// in all releases >= Go 1.x. Code that requires Go 1.x or later should
-	// say "+build go1.x", and code that should only be built before Go 1.x
-	// (perhaps it is the stub to use in that case) should say "+build !go1.x".
-	c.ReleaseTags = []string{"go1.1", "go1.2", "go1.3", "go1.4", "go1.5", "go1.6", "go1.7"}
-
-	switch os.Getenv("CGO_ENABLED") {
-	case "1":
-		c.CgoEnabled = true
-	case "0":
-		c.CgoEnabled = false
-	default:
-		// cgo must be explicitly enabled for cross compilation builds
-		if runtime.GOARCH == c.GOARCH && runtime.GOOS == c.GOOS {
-			c.CgoEnabled = cgoEnabled[c.GOOS+"/"+c.GOARCH]
-			break
-		}
-		c.CgoEnabled = false
-	}
-
-	return c
-}
-
 func envOr(name, def string) string {
 	s := os.Getenv(name)
 	if s == "" {
@@ -311,42 +265,11 @@ func envOr(name, def string) string {
 // An ImportMode controls the behavior of the Import method.
 type ImportMode uint
 
+// ImportMode constants
 const (
-	// If FindOnly is set, Import stops after locating the directory
-	// that should contain the sources for a package. It does not
-	// read any files in the directory.
 	FindOnly ImportMode = 1 << iota
-
-	// If AllowBinary is set, Import can be satisfied by a compiled
-	// package object without corresponding sources.
-	//
-	// Deprecated:
-	// The supported way to create a compiled-only package is to
-	// write source code containing a //go:binary-only-package comment at
-	// the top of the file. Such a package will be recognized
-	// regardless of this flag setting (because it has source code)
-	// and will have BinaryOnly set to true in the returned Package.
 	AllowBinary
-
-	// If ImportComment is set, parse import comments on package statements.
-	// Import returns an error if it finds a comment it cannot understand
-	// or finds conflicting comments in multiple source files.
-	// See golang.org/s/go14customimport for more information.
 	ImportComment
-
-	// By default, Import searches vendor directories
-	// that apply in the given source directory before searching
-	// the GOROOT and GOPATH roots.
-	// If an Import finds and returns a package using a vendor
-	// directory, the resulting ImportPath is the complete path
-	// to the package, including the path elements leading up
-	// to and including "vendor".
-	// For example, if Import("y", "x/subdir", 0) finds
-	// "x/vendor/y", the returned package's ImportPath is "x/vendor/y",
-	// not plain "y".
-	// See golang.org/s/go15vendor for more information.
-	//
-	// Setting IgnoreVendor ignores vendor directories.
 	IgnoreVendor
 )
 
@@ -1089,16 +1012,6 @@ func cleanImports(m map[string][]token.Position) ([]string, map[string][]token.P
 	}
 	sort.Strings(all)
 	return all, m
-}
-
-// Import is shorthand for Default.Import.
-func Import(path, srcDir string, mode ImportMode) (*Package, error) {
-	return Default.Import(path, srcDir, mode)
-}
-
-// ImportDir is shorthand for Default.ImportDir.
-func ImportDir(dir string, mode ImportMode) (*Package, error) {
-	return Default.ImportDir(dir, mode)
 }
 
 var slashslash = []byte("//")

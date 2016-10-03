@@ -9,12 +9,10 @@ import (
 )
 
 var (
-	ctx = build.Default
+	ctx = &build.Context{
+		UseAllFiles: true,
+	}
 )
-
-func init() {
-	ctx.UseAllFiles = true
-}
 
 func collectAllDeps(wd string, initPkgs ...*build.Package) ([]*build.Package, error) {
 	pkgCache := make(map[string]*build.Package)
