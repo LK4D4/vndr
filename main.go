@@ -1,6 +1,7 @@
 package main
 
 import (
+	"flag"
 	"fmt"
 	"log"
 	"os"
@@ -14,17 +15,28 @@ const (
 	tmpDir     = ".vndr-tmp"
 )
 
-func getDeps() ([]depEntry, error) {
-	if len(os.Args) != 1 && len(os.Args) != 3 && len(os.Args) != 4 {
-		return nil, fmt.Errorf("USAGE: vndr [[import path] [revision]] [repository]")
+func init() {
+	flag.Usage = func() {
+		fmt.Fprintf(os.Stderr, "Usage of %s:\n", os.Args[0])
+		fmt.Fprintf(os.Stderr, "%s [[import path] [revision]] [repository]\n", os.Args[0])
+		flag.PrintDefaults()
 	}
-	if len(os.Args) != 1 {
+}
+
+func validateArgs() {
+	args := flag.Args()
+	if len(args) != 0 && len(args) != 2 && len(args) != 3 {
+		flag.Usage()
+		os.Exit(2)
+	}
+}
+
+func getDeps() ([]depEntry, error) {
+	if len(flag.Args()) != 0 {
 		dep := depEntry{
-			importPath: os.Args[1],
-			rev:        os.Args[2],
-		}
-		if len(os.Args) == 4 {
-			dep.repoPath = os.Args[3]
+			importPath: flag.Arg(0),
+			rev:        flag.Arg(1),
+			repoPath:   flag.Arg(2),
 		}
 		return []depEntry{dep}, nil
 	}
@@ -43,6 +55,8 @@ func main() {
 	if os.Getenv("GOPATH") == "" {
 		log.Fatal("GOPATH must be set")
 	}
+	flag.Parse()
+	validateArgs()
 	wd, err := os.Getwd()
 	if err != nil {
 		log.Fatalf("Error getting working directory: %v", err)
