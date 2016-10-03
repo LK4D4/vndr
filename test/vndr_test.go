@@ -1,4 +1,4 @@
-package vndr_test
+package vndrtest
 
 import (
 	"bytes"
