@@ -4,6 +4,7 @@ import (
 	"log"
 	"os"
 	"path/filepath"
+	"runtime"
 
 	"github.com/LK4D4/vndr/build"
 )
@@ -11,6 +12,9 @@ import (
 var (
 	ctx = &build.Context{
 		UseAllFiles: true,
+		Compiler:    runtime.Compiler,
+		GOROOT:      runtime.GOROOT(),
+		GOPATH:      os.Getenv("GOPATH"),
 	}
 )
 
