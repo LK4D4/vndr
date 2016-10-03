@@ -93,7 +93,15 @@ func cleanVendor(vendorDir string, realDeps []*build.Package) error {
 		if err != nil {
 			return err
 		}
-		if len(lst) != 0 {
+		// remove licenses if it's only files
+		var onlyLicenses = true
+		for _, fi := range lst {
+			if !licenseFiles[fi.Name()] {
+				onlyLicenses = false
+				break
+			}
+		}
+		if !onlyLicenses {
 			continue
 		}
 		// remove all directories if they're not in dependency paths
