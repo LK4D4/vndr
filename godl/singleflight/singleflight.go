@@ -43,8 +43,7 @@ type Result struct {
 // sure that only one execution is in-flight for a given key at a
 // time. If a duplicate comes in, the duplicate caller waits for the
 // original to complete and receives the same results.
-// The return value shared indicates whether v was given to multiple callers.
-func (g *Group) Do(key string, fn func() (interface{}, error)) (v interface{}, err error, shared bool) {
+func (g *Group) Do(key string, fn func() (interface{}, error)) (v interface{}, err error) {
 	g.mu.Lock()
 	if g.m == nil {
 		g.m = make(map[string]*call)
@@ -61,7 +60,7 @@ func (g *Group) Do(key string, fn func() (interface{}, error)) (v interface{}, e
 	g.mu.Unlock()
 
 	g.doCall(c, key, fn)
-	return c.val, c.err, c.dups > 0
+	return c.val, c.err
 }
 
 // DoChan is like Do but returns a channel that will receive the

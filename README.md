@@ -1,5 +1,7 @@
 # VNDR
 
+[![Build Status](https://travis-ci.org/LK4D4/vndr.svg?branch=master)](https://travis-ci.org/LK4D4/vndr)
+
 Vndr is simple vendoring tool, which is inspired by docker vendor script.
 Vndr has no options.
 For initiating you will need config `vendor.conf` with lines like:

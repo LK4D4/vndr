@@ -13,12 +13,20 @@ import (
 	"strings"
 )
 
+// VCS represents package vcs root.
 type VCS struct {
 	Root       string
 	ImportPath string
 	Type       string
 }
 
+// Download downloads package by its import path. It can be a subpackage,
+// whole repo will be downloaded anyway.
+// if repoPath is not empty string, it will be uses for vcs.
+// target is top directory for download. i.e. if target is vendor/ and
+// importPath is github.com/LK4D4/vndr, package will be downloaded to
+// vendor/github.com/LK4D4/vndr.
+// rev is desired revision of package.
 func Download(importPath, repoPath, target, rev string) (*VCS, error) {
 	security := secure
 	// Analyze the import path to determine the version control system,
