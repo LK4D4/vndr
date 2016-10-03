@@ -52,7 +52,7 @@ func (g *Group) Do(key string, fn func() (interface{}, error)) (v interface{}, e
 		c.dups++
 		g.mu.Unlock()
 		c.wg.Wait()
-		return c.val, c.err, true
+		return c.val, c.err
 	}
 	c := new(call)
 	c.wg.Add(1)

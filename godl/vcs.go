@@ -596,7 +596,7 @@ func metaImportsForPrefix(importPrefix string, security securityMode) (urlStr st
 		return res, nil
 	}
 
-	resi, _, _ := fetchGroup.Do(importPrefix, func() (resi interface{}, err error) {
+	resi, _ := fetchGroup.Do(importPrefix, func() (resi interface{}, err error) {
 		fetchCacheMu.Lock()
 		if res, ok := fetchCache[importPrefix]; ok {
 			fetchCacheMu.Unlock()
