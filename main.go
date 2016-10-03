@@ -12,7 +12,6 @@ import (
 const (
 	vendorDir  = "vendor"
 	configFile = "vendor.conf"
-	tmpDir     = ".vndr-tmp"
 )
 
 func init() {

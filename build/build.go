@@ -254,14 +254,6 @@ func (ctxt *Context) SrcDirs() []string {
 	return all
 }
 
-func envOr(name, def string) string {
-	s := os.Getenv(name)
-	if s == "" {
-		return def
-	}
-	return s
-}
-
 // An ImportMode controls the behavior of the Import method.
 type ImportMode uint
 
