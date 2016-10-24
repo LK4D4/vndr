@@ -11,11 +11,7 @@ import (
 	"github.com/LK4D4/vndr/godl"
 )
 
-func isCDir(path string) bool {
-	fis, err := ioutil.ReadDir(path)
-	if err != nil {
-		return false
-	}
+func isCDir(fis []os.FileInfo) bool {
 	var hFound bool
 	for _, fi := range fis {
 		ext := filepath.Ext(fi.Name())
@@ -27,6 +23,29 @@ func isCDir(path string) bool {
 		}
 	}
 	return hFound
+}
+
+func isPBDir(fis []os.FileInfo) bool {
+	var pbFound bool
+	for _, fi := range fis {
+		if fi.IsDir() {
+			continue
+		}
+		ext := filepath.Ext(fi.Name())
+		if ext != ".proto" {
+			return false
+		}
+		pbFound = true
+	}
+	return pbFound
+}
+
+func isInterestingDir(path string) bool {
+	fis, err := ioutil.ReadDir(path)
+	if err != nil {
+		return false
+	}
+	return isCDir(fis) || isPBDir(fis)
 }
 
 func isGoFile(path string) bool {
@@ -62,7 +81,7 @@ func cleanVendor(vendorDir string, realDeps []*build.Package) error {
 			if i.Name() == "testdata" {
 				return os.RemoveAll(path)
 			}
-			if isCDir(path) {
+			if isInterestingDir(path) {
 				realPaths[path] = true
 				return nil
 			}
