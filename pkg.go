@@ -13,6 +13,7 @@ var (
 	ctx = &build.Context{
 		UseAllFiles: true,
 		Compiler:    runtime.Compiler,
+		CgoEnabled:  true,
 		GOROOT:      runtime.GOROOT(),
 		GOPATH:      os.Getenv("GOPATH"),
 	}
