@@ -43,7 +43,7 @@ func collectAllDeps(wd string, initPkgs ...*build.Package) ([]*build.Package, er
 						continue
 					}
 					if err != nil {
-						if _, ok := err.(*build.MultiplePackageError); !ok {
+						if _, ok := err.(*build.MultiplePackageError); !ok && verbose {
 							log.Printf("\tWARNING %s: %v", ipkg.ImportPath, err)
 						}
 					}

@@ -14,12 +14,17 @@ const (
 	configFile = "vendor.conf"
 )
 
+var (
+	verbose bool
+)
+
 func init() {
 	flag.Usage = func() {
 		fmt.Fprintf(os.Stderr, "Usage of %s:\n", os.Args[0])
 		fmt.Fprintf(os.Stderr, "%s [[import path] [revision]] [repository]\n", os.Args[0])
 		flag.PrintDefaults()
 	}
+	flag.BoolVar(&verbose, "verbose", false, "shows all warnings")
 }
 
 func validateArgs() {
