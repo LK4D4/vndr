@@ -22,7 +22,7 @@ func (d depEntry) String() string {
 }
 
 func parseDeps(r io.Reader) ([]depEntry, error) {
-	var deps []depEntry
+	depsMap := make(map[string]depEntry)
 	s := bufio.NewScanner(r)
 	for s.Scan() {
 		ln := strings.TrimSpace(s.Text())
@@ -45,10 +45,17 @@ func parseDeps(r io.Reader) ([]depEntry, error) {
 		if len(parts) == 3 {
 			d.repoPath = parts[2]
 		}
-		deps = append(deps, d)
+		if existDep, ok := depsMap[d.importPath]; ok {
+			return nil, fmt.Errorf("found duplicate entries: %v and %v", existDep, d)
+		}
+		depsMap[d.importPath] = d
 	}
 	if err := s.Err(); err != nil {
 		return nil, err
+	}
+	deps := make([]depEntry, 0, len(depsMap))
+	for _, d := range depsMap {
+		deps = append(deps, d)
 	}
 	return deps, nil
 }
