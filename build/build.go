@@ -163,7 +163,12 @@ func hasSubdir(root, dir string) (rel string, ok bool) {
 	if !strings.HasSuffix(root, sep) {
 		root += sep
 	}
+
 	dir = filepath.Clean(dir)
+	if !strings.HasSuffix(dir, sep) {
+		dir += sep
+	}
+
 	if !strings.HasPrefix(dir, root) {
 		return "", false
 	}
