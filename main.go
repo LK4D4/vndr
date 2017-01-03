@@ -92,10 +92,11 @@ func main() {
 	}
 	vd := filepath.Join(wd, vendorDir)
 	log.Println("Download dependencies")
+	startDownload := time.Now()
 	if err := cloneAll(vd, deps); err != nil {
 		log.Fatal(err)
 	}
-	log.Println("Dependencies downloaded")
+	log.Printf("Dependencies downloaded. Download time: %v", time.Since(startDownload))
 	log.Println("Collecting all dependencies")
 	pkgs, err := collectAllDeps(wd, initPkgs...)
 	if err != nil {
