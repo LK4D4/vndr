@@ -19,6 +19,12 @@ import (
 	"github.com/LK4D4/vndr/godl/singleflight"
 )
 
+// RepoRoot gets the root of a given repository, if it exists.
+func RepoRoot(importPath string) (string, error) {
+	root, err := repoRootForImportPath(importPath, secure)
+	return root.repo, err
+}
+
 // envForDir returns a copy of the environment
 // suitable for running in the given directory.
 // The environment is the current process's environment
