@@ -1,10 +1,12 @@
 package main
 
 import (
+	"fmt"
 	"log"
 	"os"
 	"path/filepath"
 	"runtime"
+	"strings"
 
 	"github.com/LK4D4/vndr/build"
 )
@@ -19,7 +21,7 @@ var (
 	}
 )
 
-func collectAllDeps(wd string, initPkgs ...*build.Package) ([]*build.Package, error) {
+func collectAllDeps(wd string, dlFunc func(imp string) (*build.Package, error), initPkgs ...*build.Package) ([]*build.Package, error) {
 	pkgCache := make(map[string]*build.Package)
 	var deps []*build.Package
 	initPkgsMap := make(map[*build.Package]bool)
@@ -28,43 +30,49 @@ func collectAllDeps(wd string, initPkgs ...*build.Package) ([]*build.Package, er
 		pkgCache[pkg.ImportPath] = pkg
 		deps = append(deps, pkg)
 	}
-	for {
-		var newDeps []*build.Package
-		for _, pkg := range deps {
-			if pkg.Goroot {
+	for len(deps) != 0 {
+		pkg := deps[len(deps)-1]
+		deps = deps[:len(deps)-1]
+		imports := pkg.Imports
+		if initPkgsMap[pkg] {
+			imports = append(imports, pkg.TestImports...)
+			imports = append(imports, pkg.XTestImports...)
+		}
+		for _, imp := range imports {
+			if imp == "C" {
 				continue
 			}
-			handleImports := func(pkgs []string) {
-				for _, imp := range pkgs {
-					if imp == "C" {
-						continue
-					}
-					ipkg, err := ctx.Import(imp, wd, 0)
-					if ipkg.Goroot {
-						continue
-					}
+			if _, ok := pkgCache[imp]; ok {
+				continue
+			}
+			ipkg, err := ctx.Import(imp, wd, 0)
+			if ipkg.Goroot {
+				continue
+			}
+			if err != nil {
+				if strings.Contains(err.Error(), "cannot find package ") && dlFunc != nil {
+					ipkg, err = dlFunc(imp)
 					if err != nil {
-						if _, ok := err.(*build.MultiplePackageError); !ok && verbose {
-							log.Printf("\tWARNING %s: %v", ipkg.ImportPath, err)
-						}
+						fmt.Println(ipkg.ImportPath, err)
 					}
-					if _, ok := pkgCache[ipkg.ImportPath]; ok {
-						continue
-					}
-					newDeps = append(newDeps, ipkg)
 				}
-				pkgCache[pkg.ImportPath] = pkg
+			} else if !strings.HasPrefix(ipkg.Dir, wd) {
+				// dependency not in vendor
+				if dlFunc != nil {
+					ipkg, err = dlFunc(imp)
+				} else {
+					log.Printf("\tWARNING, dependency is not vendored: %s", imp)
+				}
 			}
-			handleImports(pkg.Imports)
-			if initPkgsMap[pkg] {
-				handleImports(pkg.TestImports)
-				handleImports(pkg.XTestImports)
+			if _, ok := err.(*build.MultiplePackageError); !ok && err != nil {
+				if verbose {
+					log.Printf("\tWARNING %s: %v", imp, err)
+				}
+				continue
 			}
+			pkgCache[imp] = ipkg
+			deps = append(deps, ipkg)
 		}
-		if len(newDeps) == 0 {
-			break
-		}
-		deps = newDeps
 	}
 	var pkgs []*build.Package
 	for _, pkg := range pkgCache {
@@ -95,6 +103,9 @@ func collectPkgs(dir string) ([]*build.Package, error) {
 				}
 				return err
 			}
+		}
+		if pkg.Goroot {
+			return nil
 		}
 		pkgs = append(pkgs, pkg)
 		return nil

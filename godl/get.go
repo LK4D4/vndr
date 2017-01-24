@@ -57,7 +57,7 @@ func Download(importPath, repoPath, target, rev string) (*VCS, error) {
 			return nil, err
 		}
 	}
-	return &VCS{Root: root, ImportPath: importPath, Type: rr.vcs.cmd}, nil
+	return &VCS{Root: root, ImportPath: rr.root, Type: rr.vcs.cmd}, nil
 }
 
 // goTag matches go release tags such as go1 and go1.2.3.

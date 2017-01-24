@@ -12,8 +12,6 @@ import (
 	"github.com/LK4D4/vndr/godl"
 )
 
-var errNotVcs = errors.New("not a vcs dir")
-
 func gitDep(root string) (string, error) {
 	revCmd := exec.Command("git", "rev-parse", "HEAD")
 	revCmd.Dir = root
@@ -54,33 +52,18 @@ func bzrDep(root string) (string, error) {
 	return strings.TrimSpace(string(out)), nil
 }
 
-func cleanDeps(vcsDeps []*godl.VCS) ([]depEntry, error) {
-	var deps []depEntry
-	for _, v := range vcsDeps {
-		var depFn func(string) (string, error)
-		switch v.Type {
-		case "git":
-			depFn = gitDep
-		case "hg":
-			depFn = hgDep
-		case "svn":
-			depFn = svnDep
-		case "bzr":
-			depFn = bzrDep
-		}
-		rev, err := depFn(v.Root)
-		if err != nil {
-			return nil, err
-		}
-		if err := cleanVCS(v); err != nil {
-			return nil, err
-		}
-		deps = append(deps, depEntry{
-			rev:        rev,
-			importPath: v.ImportPath,
-		})
+func getRev(v *godl.VCS) (string, error) {
+	switch v.Type {
+	case "git":
+		return gitDep(v.Root)
+	case "hg":
+		return hgDep(v.Root)
+	case "svn":
+		return svnDep(v.Root)
+	case "bzr":
+		return bzrDep(v.Root)
 	}
-	return deps, nil
+	return "", errors.New("unknown vcs type")
 }
 
 func writeConfig(deps []depEntry, cfgFile string) error {
