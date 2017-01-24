@@ -61,16 +61,35 @@ func parseDeps(r io.Reader) ([]depEntry, error) {
 }
 
 func cloneAll(vd string, ds []depEntry) error {
+	seen := map[string]struct{}{}
+	seenMutex := new(sync.Mutex)
+
 	var wg sync.WaitGroup
 	errCh := make(chan error, len(ds))
 	limit := make(chan struct{}, 16)
 	for _, d := range ds {
 		wg.Add(1)
 		go func(d depEntry) {
-			limit <- struct{}{}
-			errCh <- cloneDep(vd, d)
+			// placed deliberately outside the mutex to improve performance
+			root, err := godl.RepoRoot(d.importPath)
+			if err == nil {
+				seenMutex.Lock()
+				if _, ok := seen[root]; ok {
+					seenMutex.Unlock()
+					wg.Done()
+					return
+				}
+				seen[root] = struct{}{}
+				seenMutex.Unlock()
+
+				limit <- struct{}{}
+				errCh <- cloneDep(vd, d)
+				<-limit
+			} else {
+				errCh <- err
+				limit <- struct{}{}
+			}
 			wg.Done()
-			<-limit
 		}(d)
 	}
 	wg.Wait()
