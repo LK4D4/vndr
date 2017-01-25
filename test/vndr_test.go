@@ -78,3 +78,53 @@ func TestVndr(t *testing.T) {
 		t.Fatalf("Output did not report success: %s", out)
 	}
 }
+
+func TestVndrInit(t *testing.T) {
+	vndrBin, err := exec.LookPath("vndr")
+	if err != nil {
+		t.Fatal(err)
+	}
+	tmp, err := ioutil.TempDir("", "test-vndr-")
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer os.RemoveAll(tmp)
+	repoPath := "github.com/LK4D4"
+	repoDir := filepath.Join(tmp, "src", repoPath)
+	if err := os.MkdirAll(repoDir, 0700); err != nil {
+		t.Fatal(err)
+	}
+
+	cpCmd := exec.Command("cp", "-r", "./testdata/dumbproject", repoDir)
+	out, err := cpCmd.CombinedOutput()
+	if err != nil {
+		t.Fatalf("cp failed: %v, out: %s", err, out)
+	}
+	vndrCmd := exec.Command(vndrBin, "init")
+	vndrCmd.Dir = filepath.Join(repoDir, "dumbproject")
+	setGopath(vndrCmd, tmp)
+
+	out, err = vndrCmd.CombinedOutput()
+	if err != nil {
+		t.Fatalf("vndr failed: %v, out: %s", err, out)
+	}
+	if !bytes.Contains(out, []byte("Success")) {
+		t.Fatalf("Output did not report success: %s", out)
+	}
+
+	pkgPath := filepath.Join(repoPath, "dumbproject")
+	installCmd := exec.Command("go", "install", pkgPath)
+	setGopath(installCmd, tmp)
+	out, err = installCmd.CombinedOutput()
+	if err != nil {
+		t.Fatalf("install %s failed: %v, out: %s", pkgPath, err, out)
+	}
+	vndr2Cmd := exec.Command(vndrBin, "init")
+	vndr2Cmd.Dir = filepath.Join(repoDir, "dumbproject")
+	setGopath(vndr2Cmd, tmp)
+
+	out, err = vndr2Cmd.CombinedOutput()
+	if err == nil || !bytes.Contains(out, []byte("There must not be")) {
+		t.Fatalf("vndr is expected to fail about existing vendor, got %v: %s", err, out)
+	}
+}

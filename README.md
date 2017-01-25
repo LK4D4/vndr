@@ -4,19 +4,36 @@
 
 Vndr is simple vendoring tool, which is inspired by Docker vendor script.
 Vndr has only one option: `-verbose`.
-For initiating you will need config `vendor.conf` with lines like:
+
+## vendor.conf
+
+`vendor.conf` is the configuration file of `vndr. It must have multiple lines,
+which have format:
 ```
 Import path               | revision                               | Repository(optional)
 github.com/example/example 03a4d9dcf2f92eae8e90ed42aa2656f63fdd0b14 https://github.com/LK4D4/example.git
 
 ```
-Just set `$GOPATH` and run `vndr` in your repository with `vendor.conf`.
+You can use `Repository` field for vendoring forks instead of original repos.
+This config format is also accepted by [trash](https://github.com/rancher/trash).
 
+## Initialization
+
+You can initiate your project with vendor directory and `vendor.conf` using command
+`vndr init`. This will populate your vendor directory with latest versions of 
+all dependecies and also write `vendor.conf` config which you can use for changing
+versions later.
+
+## Updating or using existing vendor.conf
+
+If you already have `vendor.conf` you can just change versions there as you like,
+set `$GOPATH` and run `vndr` in your repository with that file:
+```
+vndr
+```
 (Note: Your repository must be in proper place in `$GOPATH`, i.e. `$GOPATH/src/github.com/LK4D4/vndr`).
 
-You can use `Repository` field for vendoring forks instead of original repos.
-
-Also it's possible to vendor only one dependency after initial vendoring:
+Also it's possible to vendor or update only one dependency:
 ```
 vndr github.com/example/example 03a4d9dcf2f92eae8e90ed42aa2656f63fdd0b14 https://github.com/LK4D4/example.git
 ```
@@ -28,7 +45,7 @@ to take revision and repo from `vendor.conf`.
 
 If you experience any problems, please try to run `vndr -verbose`.
 
-# Known issues
+## Known issues
 
 * `vndr` vendors only top packages, i.e. `golang.org/x/net` and not
 `golang.org/x/net/trace`. If there is "non-top" packages in `vendor.conf`, `vndr`
