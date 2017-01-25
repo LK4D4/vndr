@@ -119,4 +119,12 @@ func TestVndrInit(t *testing.T) {
 	if err != nil {
 		t.Fatalf("install %s failed: %v, out: %s", pkgPath, err, out)
 	}
+	vndr2Cmd := exec.Command(vndrBin, "init")
+	vndr2Cmd.Dir = filepath.Join(repoDir, "dumbproject")
+	setGopath(vndr2Cmd, tmp)
+
+	out, err = vndr2Cmd.CombinedOutput()
+	if err == nil || !bytes.Contains(out, []byte("There must not be")) {
+		t.Fatalf("vndr is expected to fail about existing vendor, got %v: %s", err, out)
+	}
 }
