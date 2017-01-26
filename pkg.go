@@ -1,7 +1,6 @@
 package main
 
 import (
-	"fmt"
 	"log"
 	"os"
 	"path/filepath"
@@ -52,9 +51,6 @@ func collectAllDeps(wd string, dlFunc func(imp string) (*build.Package, error), 
 			if err != nil {
 				if strings.Contains(err.Error(), "cannot find package ") && dlFunc != nil {
 					ipkg, err = dlFunc(imp)
-					if err != nil {
-						fmt.Println(ipkg.ImportPath, err)
-					}
 				}
 			} else if !strings.HasPrefix(ipkg.Dir, wd) {
 				// dependency not in vendor
