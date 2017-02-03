@@ -128,3 +128,52 @@ func TestVndrInit(t *testing.T) {
 		t.Fatalf("vndr is expected to fail about existing vendor, got %v: %s", err, out)
 	}
 }
+
+func TestValidateSubpackages(t *testing.T) {
+	vndrBin, err := exec.LookPath("vndr")
+	if err != nil {
+		t.Fatal(err)
+	}
+	tmp, err := ioutil.TempDir("", "test-vndr-")
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer os.RemoveAll(tmp)
+	repoDir := filepath.Join(tmp, "src", testRepo)
+	if err := os.MkdirAll(repoDir, 0700); err != nil {
+		t.Fatal(err)
+	}
+	content := []byte(`github.com/docker/docker branch
+github.com/docker/docker/pkg/idtools branch
+github.com/coreos/etcd/raft branch
+github.com/docker/docker/pkg/archive branch
+github.com/coreos/etcd branch
+github.com/docker/swarmkit branch
+github.com/docker/go-units branch
+github.com/docker/swarmkit branch
+`)
+	vendorConf := filepath.Join(repoDir, "vendor.conf")
+	if err := ioutil.WriteFile(vendorConf, content, 0666); err != nil {
+		t.Fatal(err)
+	}
+	vndrCmd := exec.Command(vndrBin)
+	vndrCmd.Dir = repoDir
+	setGopath(vndrCmd, tmp)
+
+	out, err := vndrCmd.CombinedOutput()
+	if err == nil {
+		t.Fatal("error is expected")
+	}
+	if !bytes.Contains(out, []byte("[github.com/docker/docker github.com/docker/docker/pkg/archive github.com/docker/docker/pkg/idtools]")) {
+		t.Fatal("duplicated docker package not found")
+	}
+	if !bytes.Contains(out, []byte("[github.com/coreos/etcd github.com/coreos/etcd/raft]")) {
+		t.Fatal("duplicated etcd package not found")
+	}
+	if !bytes.Contains(out, []byte("[github.com/docker/swarmkit github.com/docker/swarmkit]")) {
+		t.Fatal("duplicated swarmkit package not found")
+	}
+	if bytes.Contains(out, []byte("go-units")) {
+		t.Fatal("go-units should not be reported")
+	}
+}

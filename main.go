@@ -1,11 +1,15 @@
 package main
 
 import (
+	"bytes"
+	"errors"
 	"flag"
 	"fmt"
 	"log"
 	"os"
 	"path/filepath"
+	"sort"
+	"strings"
 	"time"
 
 	"github.com/LK4D4/vndr/build"
@@ -41,6 +45,41 @@ func validateArgs() {
 	}
 }
 
+func validateDeps(deps []depEntry) error {
+	pkgs := make([]string, 0, len(deps))
+	for _, d := range deps {
+		pkgs = append(pkgs, d.importPath)
+	}
+	repos := make(map[string][]string)
+	sort.Strings(pkgs)
+loop:
+	for _, p := range pkgs {
+		for r := range repos {
+			if strings.HasPrefix(p, r) {
+				repos[r] = append(repos[r], p)
+				continue loop
+			}
+		}
+		repos[p] = []string{}
+	}
+	var duplicates [][]string
+	for r, subs := range repos {
+		if len(subs) != 0 {
+			allPkgs := append([]string{r}, subs...)
+			duplicates = append(duplicates, allPkgs)
+		}
+	}
+	if len(duplicates) == 0 {
+		return nil
+	}
+	var b bytes.Buffer
+	b.WriteString("Each line below contains packages which has same repo, please remove subpackages from config:\n")
+	for _, d := range duplicates {
+		b.WriteString(fmt.Sprintf("\t%v\n", d))
+	}
+	return errors.New(b.String())
+}
+
 func getDeps() ([]depEntry, error) {
 	cfg, err := os.Open(configFile)
 	if err != nil {
@@ -49,6 +88,9 @@ func getDeps() ([]depEntry, error) {
 	deps, err := parseDeps(cfg)
 	if err != nil {
 		return nil, fmt.Errorf("Failed to parse config: %v", err)
+	}
+	if err := validateDeps(deps); err != nil {
+		return nil, fmt.Errorf("Validation error: %v", err)
 	}
 	if len(flag.Args()) != 0 {
 		dep := depEntry{
