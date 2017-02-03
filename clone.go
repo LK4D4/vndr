@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io"
 	"log"
+	"sort"
 	"strings"
 	"sync"
 
@@ -21,8 +22,22 @@ func (d depEntry) String() string {
 	return fmt.Sprintf("%s %s\n", d.importPath, d.rev)
 }
 
+type byImportPath []depEntry
+
+func (b byImportPath) Len() int {
+	return len(b)
+}
+
+func (b byImportPath) Swap(i, j int) {
+	b[i], b[j] = b[j], b[i]
+}
+
+func (b byImportPath) Less(i, j int) bool {
+	return b[i].importPath < b[j].importPath
+}
+
 func parseDeps(r io.Reader) ([]depEntry, error) {
-	depsMap := make(map[string]depEntry)
+	var deps []depEntry
 	s := bufio.NewScanner(r)
 	for s.Scan() {
 		ln := strings.TrimSpace(s.Text())
@@ -45,18 +60,12 @@ func parseDeps(r io.Reader) ([]depEntry, error) {
 		if len(parts) == 3 {
 			d.repoPath = parts[2]
 		}
-		if existDep, ok := depsMap[d.importPath]; ok {
-			return nil, fmt.Errorf("found duplicate entries: %v and %v", existDep, d)
-		}
-		depsMap[d.importPath] = d
+		deps = append(deps, d)
 	}
 	if err := s.Err(); err != nil {
 		return nil, err
 	}
-	deps := make([]depEntry, 0, len(depsMap))
-	for _, d := range depsMap {
-		deps = append(deps, d)
-	}
+	sort.Sort(byImportPath(deps))
 	return deps, nil
 }
 
