@@ -149,7 +149,10 @@ github.com/coreos/etcd/raft branch
 github.com/docker/docker/pkg/archive branch
 github.com/coreos/etcd branch
 github.com/docker/swarmkit branch
+github.com/docker/go branch
+github.com/docker/go-connections branch
 github.com/docker/go-units branch
+github.com/docker/libcompose branch
 github.com/docker/swarmkit branch
 `)
 	vendorConf := filepath.Join(repoDir, "vendor.conf")
@@ -174,6 +177,12 @@ github.com/docker/swarmkit branch
 		t.Fatal("duplicated swarmkit package not found")
 	}
 	if bytes.Contains(out, []byte("go-units")) {
-		t.Fatal("go-units should not be reported")
+		t.Fatalf("go-units should not be reported: %s", out)
+	}
+	if bytes.Contains(out, []byte("go-connections")) {
+		t.Fatalf("go-connections should not be reported: %s", out)
+	}
+	if bytes.Contains(out, []byte("libcompose")) {
+		t.Fatalf("libcompose should not be reported: %s", out)
 	}
 }

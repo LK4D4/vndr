@@ -55,7 +55,7 @@ func validateDeps(deps []depEntry) error {
 loop:
 	for _, p := range pkgs {
 		for r := range repos {
-			if strings.HasPrefix(p, r) {
+			if strings.HasPrefix(p, r+"/") || p == r {
 				repos[r] = append(repos[r], p)
 				continue loop
 			}
