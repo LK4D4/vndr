@@ -139,6 +139,12 @@ func main() {
 	if err != nil {
 		log.Fatalf("Error getting working directory: %v", err)
 	}
+
+	wd, err = filepath.EvalSymlinks(wd)
+	if err != nil {
+		log.Fatalf("Error getting working directory after evalsymlinks: %v", err)
+	}
+
 	log.Println("Collecting initial packages")
 	initPkgs, err := collectPkgs(wd)
 	if err != nil {
