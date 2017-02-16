@@ -1,7 +1,8 @@
 package pkg2
 
-import "github.com/uber-go/zap"
+import "go.uber.org/zap"
 
 func Print() {
-	zap.New(zap.NewJSONEncoder()).Error("test print")
+	l, _ := zap.NewProduction()
+	l.Error("test print")
 }
