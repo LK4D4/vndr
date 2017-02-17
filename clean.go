@@ -72,14 +72,14 @@ func cleanVendor(vendorDir string, realDeps []*build.Package) error {
 			return nil
 		}
 
-		// When preserving tests don't delete testdata, let alone _test.go files.
-		if preserveTest {
-			if i.Name() == "testdata" {
-				return nil
-			}
-			if strings.HasSuffix(path, "_test.go") {
-				return nil
-			}
+		// Make sure we don't delete anything that matches the whitelist. The
+		// whitelist is relative to the vendor directory.
+		relPath, err := filepath.Rel(vendorDir, path)
+		if err != nil {
+			return err
+		}
+		if cleanWhitelist.matchString(relPath) {
+			return nil
 		}
 
 		if strings.HasPrefix(i.Name(), ".") || strings.HasPrefix(i.Name(), "_") {
