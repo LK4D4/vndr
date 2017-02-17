@@ -2,6 +2,7 @@ package vndrtest
 
 import (
 	"bytes"
+	"fmt"
 	"io/ioutil"
 	"os"
 	"os/exec"
@@ -184,5 +185,89 @@ github.com/docker/swarmkit branch
 	}
 	if bytes.Contains(out, []byte("libcompose")) {
 		t.Fatalf("libcompose should not be reported: %s", out)
+	}
+}
+
+func TestCleanWhitelist(t *testing.T) {
+	vndrBin, err := exec.LookPath("vndr")
+	if err != nil {
+		t.Fatal(err)
+	}
+	tmp, err := ioutil.TempDir("", "test-vndr-")
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer os.RemoveAll(tmp)
+	repoDir := filepath.Join(tmp, "src", testRepo)
+	if err := os.MkdirAll(repoDir, 0700); err != nil {
+		t.Fatal(err)
+	}
+	content := []byte(`github.com/containers/image master
+github.com/projectatomic/skopeo master`)
+	vendorConf := filepath.Join(repoDir, "vendor.conf")
+	if err := ioutil.WriteFile(vendorConf, content, 0666); err != nil {
+		t.Fatal(err)
+	}
+	vndrCmd := exec.Command(vndrBin,
+		"-whitelist", `github\.com/containers/image/MAINTAINERS`,
+		"-whitelist", `github\.com/projectatomic/skopeo/integration/.*`)
+	vndrCmd.Dir = repoDir
+	setGopath(vndrCmd, tmp)
+
+	out, err := vndrCmd.CombinedOutput()
+	if err != nil {
+		t.Logf("output: %v", string(out))
+		t.Fatalf("error was not expected: %v", err)
+	}
+
+	if !bytes.Contains(out, []byte(fmt.Sprintf(`Ignoring paths matching %q`, `github\.com/containers/image/MAINTAINERS`))) {
+		t.Logf("output: %v", string(out))
+		t.Errorf(`output missing regular expression "github\.com/containers/image/MAINTAINERS"`)
+	}
+	if !bytes.Contains(out, []byte(fmt.Sprintf(`Ignoring paths matching %q`, `github\.com/projectatomic/skopeo/integration/.*`))) {
+		t.Logf("output: %v", string(out))
+		t.Errorf(`output missing regular expression "github\.com/projectatomic/skopeo/integration/.*"`)
+	}
+
+	// Make sure that the files were not "cleaned".
+	for _, path := range []string{
+		"github.com/containers/image/MAINTAINERS",
+		"github.com/projectatomic/skopeo/integration",
+	} {
+		path = filepath.Join(repoDir, "vendor", path)
+		if _, err := os.Lstat(path); err != nil {
+			t.Errorf("%s was cleaned but shouldn't have been", path)
+		}
+	}
+
+	// Run again to make sure the above will be cleaned.
+	vndrCmd = exec.Command(vndrBin)
+	vndrCmd.Dir = repoDir
+	setGopath(vndrCmd, tmp)
+
+	out, err = vndrCmd.CombinedOutput()
+	if err != nil {
+		t.Logf("output: %v", string(out))
+		t.Fatalf("[no -whitelist] error was not expected: %v", err)
+	}
+
+	if bytes.Contains(out, []byte(fmt.Sprintf(`Ignoring paths matching %q`, `github\.com/containers/image/MAINTAINERS`))) {
+		t.Logf("output: %v", string(out))
+		t.Errorf(`[no -whitelist] output missing regular expression "github\.com/containers/image/MAINTAINERS"`)
+	}
+	if bytes.Contains(out, []byte(fmt.Sprintf(`Ignoring paths matching %q`, `github\.com/projectatomic/skopeo/integration/.*`))) {
+		t.Logf("output: %v", string(out))
+		t.Errorf(`[no -whitelist] output missing regular expression "github\.com/projectatomic/skopeo/integration/.*"`)
+	}
+
+	// Make sure that the files were "cleaned".
+	for _, path := range []string{
+		"github.com/containers/image/MAINTAINERS",
+		"github.com/projectatomic/skopeo/integration",
+	} {
+		path = filepath.Join(repoDir, "vendor", path)
+		if _, err := os.Lstat(path); err == nil {
+			t.Errorf("[no -whitelist] %s was NOT cleaned but should have been", path)
+		}
 	}
 }
