@@ -8,6 +8,7 @@ import (
 	"log"
 	"os"
 	"path/filepath"
+	"regexp"
 	"sort"
 	"strings"
 	"time"
@@ -22,9 +23,40 @@ const (
 )
 
 var (
-	verbose      bool
-	preserveTest bool
+	verbose        bool
+	cleanWhitelist regexpSlice
 )
+
+type regexpSlice []*regexp.Regexp
+
+var _ flag.Value = new(regexpSlice)
+
+func (rs *regexpSlice) Set(exp string) error {
+	regex, err := regexp.Compile(exp)
+	if err != nil {
+		return err
+	}
+
+	*rs = append(*rs, regex)
+	return nil
+}
+
+func (rs *regexpSlice) String() string {
+	exps := []string{}
+	for _, regex := range *rs {
+		exps = append(exps, fmt.Sprintf("%q", regex.String()))
+	}
+	return fmt.Sprintf("%v", exps)
+}
+
+func (rs *regexpSlice) matchString(str string) bool {
+	for _, regex := range *rs {
+		if regex.MatchString(str) {
+			return true
+		}
+	}
+	return false
+}
 
 func init() {
 	flag.Usage = func() {
@@ -33,7 +65,7 @@ func init() {
 		flag.PrintDefaults()
 	}
 	flag.BoolVar(&verbose, "verbose", false, "shows all warnings")
-	flag.BoolVar(&preserveTest, "test", false, "preserve _test.go files in vendor'd projects")
+	flag.Var(&cleanWhitelist, "whitelist", "regular expressions to whitelist for cleaning phase of vendoring, relative to the vendor/ directory")
 }
 
 func validateArgs() {
@@ -137,22 +169,22 @@ func main() {
 			log.Fatal("There must not be vendor dir and vendor.conf file for initialization")
 		}
 	}
+
 	wd, err := os.Getwd()
 	if err != nil {
 		log.Fatalf("Error getting working directory: %v", err)
 	}
-
 	wd, err = filepath.EvalSymlinks(wd)
 	if err != nil {
 		log.Fatalf("Error getting working directory after evalsymlinks: %v", err)
 	}
+	vd := filepath.Join(wd, vendorDir)
 
 	log.Println("Collecting initial packages")
 	initPkgs, err := collectPkgs(wd)
 	if err != nil {
 		log.Fatalf("Error collecting initial packages: %v", err)
 	}
-	vd := filepath.Join(wd, vendorDir)
 	// variables for init
 	var dlFunc func(string) (*build.Package, error)
 	var deps []depEntry
@@ -194,6 +226,9 @@ func main() {
 		log.Fatalf("Error on collecting all dependencies: %v", err)
 	}
 	log.Println("Clean vendor dir from unused packages")
+	for _, regex := range cleanWhitelist {
+		log.Printf("\tIgnoring paths matching %q", regex.String())
+	}
 	if err := cleanVendor(vd, pkgs); err != nil {
 		log.Fatal(err)
 	}

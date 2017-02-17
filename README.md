@@ -3,7 +3,15 @@
 [![Build Status](https://travis-ci.org/LK4D4/vndr.svg?branch=master)](https://travis-ci.org/LK4D4/vndr)
 
 Vndr is simple vendoring tool, which is inspired by Docker vendor script.
-Vndr has only one option: `-verbose`.
+Vndr has only two options: `-verbose` and `-whitelist`, both of which do
+exactly what they say on the tin.
+
+* `-verbose` adds additional output, helpful for debugging issues.
+* `-whitelist` allows you to specify several regular expressions for paths
+  which will *not* be cleaned in the final stage of vendoring -- this is useful
+  for running tests in a vendored project or otherwise ensuring that some
+  important files are retained after `vndr` is done cleaning unused files from
+  your `vendor/` directory.
 
 ## vendor.conf
 
@@ -20,7 +28,7 @@ This config format is also accepted by [trash](https://github.com/rancher/trash)
 ## Initialization
 
 You can initiate your project with vendor directory and `vendor.conf` using command
-`vndr init`. This will populate your vendor directory with latest versions of 
+`vndr init`. This will populate your vendor directory with latest versions of
 all dependecies and also write `vendor.conf` config which you can use for changing
 versions later.
 
