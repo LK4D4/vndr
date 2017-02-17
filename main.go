@@ -22,7 +22,8 @@ const (
 )
 
 var (
-	verbose bool
+	verbose      bool
+	preserveTest bool
 )
 
 func init() {
@@ -32,6 +33,7 @@ func init() {
 		flag.PrintDefaults()
 	}
 	flag.BoolVar(&verbose, "verbose", false, "shows all warnings")
+	flag.BoolVar(&preserveTest, "test", false, "preserve _test.go files in vendor'd projects")
 }
 
 func validateArgs() {
