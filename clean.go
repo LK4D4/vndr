@@ -71,6 +71,17 @@ func cleanVendor(vendorDir string, realDeps []*build.Package) error {
 		if err != nil {
 			return nil
 		}
+
+		// When preserving tests don't delete testdata, let alone _test.go files.
+		if preserveTest {
+			if i.Name() == "testdata" {
+				return nil
+			}
+			if strings.HasSuffix(path, "_test.go") {
+				return nil
+			}
+		}
+
 		if strings.HasPrefix(i.Name(), ".") || strings.HasPrefix(i.Name(), "_") {
 			return os.RemoveAll(path)
 		}
