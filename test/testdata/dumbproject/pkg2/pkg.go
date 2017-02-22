@@ -1,6 +1,6 @@
 package pkg2
 
-import "go.uber.org/zap"
+import "github.com/uber-go/zap"
 
 func Print() {
 	l, _ := zap.NewProduction()
