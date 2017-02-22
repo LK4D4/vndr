@@ -29,7 +29,7 @@ This config format is also accepted by [trash](https://github.com/rancher/trash)
 
 You can initiate your project with vendor directory and `vendor.conf` using command
 `vndr init`. This will populate your vendor directory with latest versions of
-all dependecies and also write `vendor.conf` config which you can use for changing
+all dependencies and also write `vendor.conf` config which you can use for changing
 versions later.
 
 ## Updating or using existing vendor.conf
