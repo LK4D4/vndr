@@ -69,7 +69,7 @@ func parseDeps(r io.Reader) ([]depEntry, error) {
 	return deps, nil
 }
 
-func cloneAll(vd string, ds []depEntry) error {
+func cloneAll(vd string, ds []depEntry, cleanVCSFiles bool) error {
 	var wg sync.WaitGroup
 	errCh := make(chan error, len(ds))
 	limit := make(chan struct{}, 16)
@@ -77,7 +77,7 @@ func cloneAll(vd string, ds []depEntry) error {
 		wg.Add(1)
 		go func(d depEntry) {
 			limit <- struct{}{}
-			errCh <- cloneDep(vd, d)
+			errCh <- cloneDep(vd, d, cleanVCSFiles)
 			wg.Done()
 			<-limit
 		}(d)
@@ -96,7 +96,7 @@ func cloneAll(vd string, ds []depEntry) error {
 	return fmt.Errorf("Errors on clone:\n%s", strings.Join(errs, "\n"))
 }
 
-func cloneDep(vd string, d depEntry) error {
+func cloneDep(vd string, d depEntry, cleanVCSFiles bool) error {
 	if d.repoPath != "" {
 		log.Printf("\tClone %s to %s, revision %s", d.repoPath, d.importPath, d.rev)
 	} else {
@@ -107,5 +107,8 @@ func cloneDep(vd string, d depEntry) error {
 	if err != nil {
 		return fmt.Errorf("%s: %v", d.importPath, err)
 	}
-	return cleanVCS(vcs)
+	if cleanVCSFiles {
+		return cleanVCS(vcs)
+	}
+	return nil
 }

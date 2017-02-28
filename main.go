@@ -24,6 +24,7 @@ const (
 
 var (
 	verbose        bool
+	keepVCSFiles   bool
 	cleanWhitelist regexpSlice
 )
 
@@ -65,6 +66,7 @@ func init() {
 		flag.PrintDefaults()
 	}
 	flag.BoolVar(&verbose, "verbose", false, "shows all warnings")
+	flag.BoolVar(&keepVCSFiles, "keep-vcs-files", false, "Do not delete any file")
 	flag.Var(&cleanWhitelist, "whitelist", "regular expressions to whitelist for cleaning phase of vendoring, relative to the vendor/ directory")
 }
 
@@ -195,7 +197,7 @@ func main() {
 			log.Fatal(err)
 		}
 		startDownload := time.Now()
-		if err := cloneAll(vd, cfgDeps); err != nil {
+		if err := cloneAll(vd, cfgDeps, !keepVCSFiles); err != nil {
 			log.Fatal(err)
 		}
 		log.Printf("Dependencies downloaded. Download time: %v", time.Since(startDownload))
@@ -229,8 +231,10 @@ func main() {
 	for _, regex := range cleanWhitelist {
 		log.Printf("\tIgnoring paths matching %q", regex.String())
 	}
-	if err := cleanVendor(vd, pkgs); err != nil {
-		log.Fatal(err)
+	if !keepVCSFiles {
+		if err := cleanVendor(vd, pkgs); err != nil {
+			log.Fatal(err)
+		}
 	}
 	if init {
 		if err := writeConfig(deps, configFile); err != nil {
