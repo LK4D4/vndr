@@ -57,6 +57,10 @@ func isGoFile(path string) bool {
 // licenseFilesRegexp is a regexp of file names that are likely to contain licensing information
 var licenseFilesRegexp = regexp.MustCompile(`(?i).*(LICENSE|COPYING|PATENT|NOTICE|README).*`)
 
+func isLicenseFile(path string) bool {
+	return licenseFilesRegexp.MatchString(path) && !isGoFile(path)
+}
+
 // cleanVendor removes files from unused packages and non-go files
 func cleanVendor(vendorDir string, realDeps []*build.Package) error {
 	realPaths := make(map[string]bool)
@@ -100,7 +104,7 @@ func cleanVendor(vendorDir string, realDeps []*build.Package) error {
 		}
 
 		// keep files for licenses
-		if licenseFilesRegexp.MatchString(i.Name()) {
+		if isLicenseFile(i.Name()) {
 			return nil
 		}
 		// remove files from non-deps, non-go files and test files
@@ -123,7 +127,7 @@ func cleanVendor(vendorDir string, realDeps []*build.Package) error {
 		// remove licenses if it's only files
 		var onlyLicenses = true
 		for _, fi := range lst {
-			if !licenseFilesRegexp.MatchString(fi.Name()) {
+			if !isLicenseFile(fi.Name()) {
 				onlyLicenses = false
 				break
 			}
