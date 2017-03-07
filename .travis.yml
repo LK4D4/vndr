@@ -1,8 +1,8 @@
 language: go
 sudo: false
 go:
-  - 1.6.3
   - 1.7.3
+  - 1.8
   - tip
 install:
   - go get -t ./...
@@ -11,4 +11,5 @@ script:
   - go vet ./...
   - golint -set_exit_status ./...
   - test -z "$(gofmt -s -l . | tee /dev/stderr)"
+  - go test .
   - go test -v test/vndr_test.go
