@@ -12,6 +12,12 @@ exactly what they say on the tin.
   for running tests in a vendored project or otherwise ensuring that some
   important files are retained after `vndr` is done cleaning unused files from
   your `vendor/` directory.
+  
+## Installation
+
+Execute
+
+    go get github.com/LK4D4/vndr
 
 ## vendor.conf
 
