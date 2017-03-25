@@ -21,7 +21,7 @@ Execute
 
 ## vendor.conf
 
-`vendor.conf` is the configuration file of `vndr. It must have multiple lines,
+`vendor.conf` is the configuration file of `vndr`. It must have multiple lines,
 which have format:
 ```
 Import path               | revision                               | Repository(optional)
