@@ -20,6 +20,14 @@ var (
 	}
 )
 
+func init() {
+	gp, err := getGOPATH()
+	if err != nil {
+		log.Fatal(err)
+	}
+	ctx.GOPATH = gp
+}
+
 func collectAllDeps(wd string, dlFunc func(imp string) (*build.Package, error), initPkgs ...*build.Package) ([]*build.Package, error) {
 	pkgCache := make(map[string]*build.Package)
 	var deps []*build.Package

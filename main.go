@@ -157,8 +157,12 @@ func main() {
 	}()
 	flag.Parse()
 	validateArgs()
-	if os.Getenv("GOPATH") == "" {
-		log.Fatal("GOPATH must be set")
+	gp, err := getGOPATH()
+	if err != nil {
+		log.Fatal(err)
+	}
+	if gp == "" {
+		log.Fatal("GOPATH is not set")
 	}
 	var init bool
 	if flag.Arg(0) == "init" {
