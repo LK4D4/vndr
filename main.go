@@ -79,6 +79,14 @@ func validateArgs() {
 	}
 }
 
+func checkUnused(deps []depEntry, vd string) {
+	for _, d := range deps {
+		if _, err := os.Stat(filepath.Join(vd, d.importPath)); err != nil && os.IsNotExist(err) {
+			log.Printf("WARNING: package %s is unused, consider removing it from vendor.conf", d.importPath)
+		}
+	}
+}
+
 func validateDeps(deps []depEntry) error {
 	pkgs := make([]string, 0, len(deps))
 	for _, d := range deps {
@@ -202,6 +210,7 @@ func main() {
 		if err := cloneAll(vd, cfgDeps); err != nil {
 			log.Fatal(err)
 		}
+		deps = cfgDeps
 		log.Printf("Dependencies downloaded. Download time: %v", time.Since(startDownload))
 	} else {
 		dlFunc = func(imp string) (*build.Package, error) {
@@ -241,6 +250,8 @@ func main() {
 			log.Fatal(err)
 		}
 		log.Println("Vendor initialized and result is in", configFile)
+	} else {
+		checkUnused(deps, vd)
 	}
 	log.Println("Success")
 }
