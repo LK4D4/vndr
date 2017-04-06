@@ -271,3 +271,35 @@ github.com/projectatomic/skopeo master`)
 		}
 	}
 }
+
+func TestUnused(t *testing.T) {
+	vndrBin, err := exec.LookPath("vndr")
+	if err != nil {
+		t.Fatal(err)
+	}
+	tmp, err := ioutil.TempDir("", "test-vndr-")
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer os.RemoveAll(tmp)
+	repoDir := filepath.Join(tmp, "src", testRepo)
+	if err := os.MkdirAll(repoDir, 0700); err != nil {
+		t.Fatal(err)
+	}
+	unusedPkg := "github.com/docker/go-units"
+	content := []byte(unusedPkg + " master\n")
+	vendorConf := filepath.Join(repoDir, "vendor.conf")
+	if err := ioutil.WriteFile(vendorConf, content, 0666); err != nil {
+		t.Fatal(err)
+	}
+	vndrCmd := exec.Command(vndrBin)
+	vndrCmd.Dir = repoDir
+	setGopath(vndrCmd, tmp)
+
+	msg := fmt.Sprintf("WARNING: package %s is unused, consider removing it from vendor.conf", unusedPkg)
+	out, err := vndrCmd.CombinedOutput()
+	if !bytes.Contains(out, []byte(msg)) {
+		t.Logf("output: %v", string(out))
+		t.Errorf("there is no warning about unused package %s", unusedPkg)
+	}
+}
