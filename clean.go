@@ -61,6 +61,10 @@ func isLicenseFile(path string) bool {
 	return licenseFilesRegexp.MatchString(path) && !isGoFile(path)
 }
 
+func isVendorConfFile(path string) bool {
+	return filepath.Base(path) == "vendor.conf"
+}
+
 // cleanVendor removes files from unused packages and non-go files
 func cleanVendor(vendorDir string, realDeps []*build.Package) error {
 	realPaths := make(map[string]bool)
@@ -103,8 +107,8 @@ func cleanVendor(vendorDir string, realDeps []*build.Package) error {
 			return nil
 		}
 
-		// keep files for licenses
-		if isLicenseFile(i.Name()) {
+		// keep files for licenses and recursive vendoring
+		if isLicenseFile(i.Name()) || isVendorConfFile(i.Name()) {
 			return nil
 		}
 		// remove files from non-deps, non-go files and test files
