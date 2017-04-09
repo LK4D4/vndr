@@ -432,6 +432,16 @@ func repoRootForImportPath(importPath string, security securityMode) (*repoRoot,
 	return rr, err
 }
 
+// RootImport returns root path of import.
+// i.e. golang.org/x/net for golang.org/x/net/context
+func RootImport(importPath string) (string, error) {
+	rr, err := repoRootForImportPath(importPath, secure)
+	if err != nil {
+		return "", err
+	}
+	return rr.root, err
+}
+
 var errUnknownSite = errors.New("dynamic lookup required to find mapping")
 
 // repoRootFromVCSPaths attempts to map importPath to a repoRoot

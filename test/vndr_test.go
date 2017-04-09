@@ -168,23 +168,45 @@ github.com/docker/swarmkit branch
 	if err == nil {
 		t.Fatal("error is expected")
 	}
-	if !bytes.Contains(out, []byte("[github.com/docker/docker github.com/docker/docker/pkg/archive github.com/docker/docker/pkg/idtools]")) {
-		t.Fatal("duplicated docker package not found")
+	t.Logf("Output of vndr:\n%s", out)
+	if !bytes.Contains(out, []byte("WARNING: packages 'github.com/docker/docker, github.com/docker/docker/pkg/idtools, github.com/docker/docker/pkg/archive' has same root import github.com/docker/docker")) {
+		t.Error("duplicated docker package not found")
 	}
-	if !bytes.Contains(out, []byte("[github.com/coreos/etcd github.com/coreos/etcd/raft]")) {
-		t.Fatal("duplicated etcd package not found")
+	if !bytes.Contains(out, []byte("WARNING: packages 'github.com/coreos/etcd/raft, github.com/coreos/etcd' has same root import github.com/coreos/etcd")) {
+		t.Error("duplicated etcd package not found")
 	}
-	if !bytes.Contains(out, []byte("[github.com/docker/swarmkit github.com/docker/swarmkit]")) {
-		t.Fatal("duplicated swarmkit package not found")
+	if !bytes.Contains(out, []byte("WARNING: packages 'github.com/docker/swarmkit, github.com/docker/swarmkit' has same root import github.com/docker/swarmkit")) {
+		t.Error("duplicated swarmkit package not found")
 	}
 	if bytes.Contains(out, []byte("go-units")) {
-		t.Fatalf("go-units should not be reported: %s", out)
+		t.Errorf("go-units should not be reported: %s", out)
 	}
 	if bytes.Contains(out, []byte("go-connections")) {
-		t.Fatalf("go-connections should not be reported: %s", out)
+		t.Errorf("go-connections should not be reported: %s", out)
 	}
 	if bytes.Contains(out, []byte("libcompose")) {
-		t.Fatalf("libcompose should not be reported: %s", out)
+		t.Errorf("libcompose should not be reported: %s", out)
+	}
+
+	tmpFileName := "vendor.conf.tmp"
+	tmpConfig := filepath.Join(repoDir, tmpFileName)
+	if _, err := os.Stat(tmpConfig); err != nil {
+		t.Fatalf("error stat %s: %v", tmpFileName, err)
+	}
+	b, err := ioutil.ReadFile(tmpConfig)
+	if err != nil {
+		t.Fatal(err)
+	}
+	expected := []byte(`github.com/docker/docker branch
+github.com/coreos/etcd branch
+github.com/docker/swarmkit branch
+github.com/docker/go branch
+github.com/docker/go-connections branch
+github.com/docker/go-units branch
+github.com/docker/libcompose branch
+`)
+	if !bytes.Equal(b, expected) {
+		t.Fatalf("suggested vendor.conf is wrong:\n%s\n Should be %s", b, expected)
 	}
 }
 

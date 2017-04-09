@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"io"
 	"log"
-	"sort"
 	"strings"
 	"sync"
 
@@ -20,20 +19,6 @@ type depEntry struct {
 
 func (d depEntry) String() string {
 	return fmt.Sprintf("%s %s\n", d.importPath, d.rev)
-}
-
-type byImportPath []depEntry
-
-func (b byImportPath) Len() int {
-	return len(b)
-}
-
-func (b byImportPath) Swap(i, j int) {
-	b[i], b[j] = b[j], b[i]
-}
-
-func (b byImportPath) Less(i, j int) bool {
-	return b[i].importPath < b[j].importPath
 }
 
 func parseDeps(r io.Reader) ([]depEntry, error) {
@@ -65,7 +50,6 @@ func parseDeps(r io.Reader) ([]depEntry, error) {
 	if err := s.Err(); err != nil {
 		return nil, err
 	}
-	sort.Sort(byImportPath(deps))
 	return deps, nil
 }
 
