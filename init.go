@@ -6,7 +6,6 @@ import (
 	"io/ioutil"
 	"os"
 	"os/exec"
-	"sort"
 	"strings"
 
 	"github.com/LK4D4/vndr/godl"
@@ -71,6 +70,5 @@ func writeConfig(deps []depEntry, cfgFile string) error {
 	for _, d := range deps {
 		lines = append(lines, d.String())
 	}
-	sort.Strings(lines)
 	return ioutil.WriteFile(cfgFile, []byte(strings.Join(lines, "")), os.FileMode(0666))
 }

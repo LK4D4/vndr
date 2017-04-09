@@ -1,7 +1,6 @@
 package main
 
 import (
-	"bytes"
 	"errors"
 	"flag"
 	"fmt"
@@ -9,7 +8,6 @@ import (
 	"os"
 	"path/filepath"
 	"regexp"
-	"sort"
 	"strings"
 	"time"
 
@@ -87,39 +85,63 @@ func checkUnused(deps []depEntry, vd string) {
 	}
 }
 
-func validateDeps(deps []depEntry) error {
-	pkgs := make([]string, 0, len(deps))
+func mergeDeps(root string, deps []depEntry) depEntry {
+	merged := depEntry{importPath: root}
+	merged.rev = deps[0].rev
 	for _, d := range deps {
-		pkgs = append(pkgs, d.importPath)
+		if d.repoPath != "" {
+			merged.repoPath = d.repoPath
+			break
+		}
 	}
-	repos := make(map[string][]string)
-	sort.Strings(pkgs)
-loop:
-	for _, p := range pkgs {
-		for r := range repos {
-			if strings.HasPrefix(p, r+"/") || p == r {
-				repos[r] = append(repos[r], p)
-				continue loop
+	return merged
+}
+
+func validateDeps(deps []depEntry) error {
+	roots := make(map[string][]depEntry)
+	var rootsOrder []string
+	for _, d := range deps {
+		root, err := godl.RootImport(d.importPath)
+		if err != nil {
+			return err
+		}
+		if _, ok := roots[root]; !ok {
+			rootsOrder = append(rootsOrder, root)
+		}
+		roots[root] = append(roots[root], d)
+	}
+	var newDeps []depEntry
+	var invalid bool
+	for _, r := range rootsOrder {
+		rootDeps := roots[r]
+		if len(rootDeps) == 1 {
+			d := rootDeps[0]
+			if d.importPath != r {
+				log.Printf("WARNING: package %s is not root import, should be %s", d.importPath, r)
+				invalid = true
+				newDeps = append(newDeps, depEntry{importPath: r, rev: d.rev, repoPath: d.repoPath})
+				continue
 			}
+			newDeps = append(newDeps, d)
+			continue
 		}
-		repos[p] = []string{}
-	}
-	var duplicates [][]string
-	for r, subs := range repos {
-		if len(subs) != 0 {
-			allPkgs := append([]string{r}, subs...)
-			duplicates = append(duplicates, allPkgs)
+		invalid = true
+		var imps []string
+		for _, d := range rootDeps {
+			imps = append(imps, d.importPath)
 		}
+		log.Printf("WARNING: packages '%s' has same root import %s", strings.Join(imps, ", "), r)
+		newDeps = append(newDeps, mergeDeps(r, rootDeps))
 	}
-	if len(duplicates) == 0 {
+	if !invalid {
 		return nil
 	}
-	var b bytes.Buffer
-	b.WriteString("Each line below contains packages which has same repo, please remove subpackages from config:\n")
-	for _, d := range duplicates {
-		b.WriteString(fmt.Sprintf("\t%v\n", d))
+	tmpConfig := configFile + ".tmp"
+	if err := writeConfig(newDeps, tmpConfig); err != nil {
+		return err
 	}
-	return errors.New(b.String())
+	log.Printf("WARNING: suggested vendor.conf is written to %s, use diff and common sense before using it", tmpConfig)
+	return errors.New("There were some validation errors")
 }
 
 func getDeps() ([]depEntry, error) {
@@ -132,7 +154,7 @@ func getDeps() ([]depEntry, error) {
 		return nil, fmt.Errorf("Failed to parse config: %v", err)
 	}
 	if err := validateDeps(deps); err != nil {
-		return nil, fmt.Errorf("Validation error: %v", err)
+		return nil, err
 	}
 	if len(flag.Args()) != 0 {
 		dep := depEntry{
