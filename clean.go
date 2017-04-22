@@ -152,6 +152,9 @@ func cleanVCS(v *godl.VCS) error {
 		return err
 	}
 	return filepath.Walk(v.Root, func(path string, i os.FileInfo, err error) error {
+		if i == nil { // this means we lost the file/dir sometime during the WalkFunc invocation
+			return filepath.SkipDir
+		}
 		if path == vendorDir {
 			return nil
 		}
