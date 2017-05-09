@@ -26,7 +26,14 @@ func setGopath(cmd *exec.Cmd, gopath string) {
 	cmd.Env = append(cmd.Env, "GOPATH="+gopath)
 }
 
+func skipOnShort(t *testing.T) {
+	if testing.Short() {
+		t.Skip("skipping test in short mode")
+	}
+}
+
 func TestVndr(t *testing.T) {
+	skipOnShort(t)
 	vndrBin, err := exec.LookPath("vndr")
 	if err != nil {
 		t.Fatal(err)
@@ -90,6 +97,7 @@ func TestVndr(t *testing.T) {
 }
 
 func TestVndrInit(t *testing.T) {
+	skipOnShort(t)
 	vndrBin, err := exec.LookPath("vndr")
 	if err != nil {
 		t.Fatal(err)
