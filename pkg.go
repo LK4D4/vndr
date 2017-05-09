@@ -65,12 +65,12 @@ func collectAllDeps(wd string, dlFunc func(imp string) (*build.Package, error), 
 				if dlFunc != nil {
 					ipkg, err = dlFunc(imp)
 				} else {
-					log.Printf("\tWARNING, dependency is not vendored: %s", imp)
+					Warnf("dependency is not vendored: %s", imp)
 				}
 			}
 			if _, ok := err.(*build.MultiplePackageError); !ok && err != nil {
 				if verbose {
-					log.Printf("\tWARNING %s: %v", imp, err)
+					log.Printf("\tWARNING(verbose) %s: %v", imp, err)
 				}
 				continue
 			}

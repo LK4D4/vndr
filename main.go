@@ -23,6 +23,7 @@ const (
 var (
 	verbose        bool
 	cleanWhitelist regexpSlice
+	strict         bool
 )
 
 type regexpSlice []*regexp.Regexp
@@ -64,6 +65,7 @@ func init() {
 	}
 	flag.BoolVar(&verbose, "verbose", false, "shows all warnings")
 	flag.Var(&cleanWhitelist, "whitelist", "regular expressions to whitelist for cleaning phase of vendoring, relative to the vendor/ directory")
+	flag.BoolVar(&strict, "strict", false, "checking mode. treat non-trivial warning as an error")
 }
 
 func validateArgs() {
@@ -80,7 +82,7 @@ func validateArgs() {
 func checkUnused(deps []depEntry, vd string) {
 	for _, d := range deps {
 		if _, err := os.Stat(filepath.Join(vd, d.importPath)); err != nil && os.IsNotExist(err) {
-			log.Printf("WARNING: package %s is unused, consider removing it from vendor.conf", d.importPath)
+			Warnf("package %s is unused, consider removing it from vendor.conf", d.importPath)
 		}
 	}
 }
@@ -117,7 +119,7 @@ func validateDeps(deps []depEntry) error {
 		if len(rootDeps) == 1 {
 			d := rootDeps[0]
 			if d.importPath != r {
-				log.Printf("WARNING: package %s is not root import, should be %s", d.importPath, r)
+				Warnf("package %s is not root import, should be %s", d.importPath, r)
 				invalid = true
 				newDeps = append(newDeps, depEntry{importPath: r, rev: d.rev, repoPath: d.repoPath})
 				continue
@@ -130,7 +132,7 @@ func validateDeps(deps []depEntry) error {
 		for _, d := range rootDeps {
 			imps = append(imps, d.importPath)
 		}
-		log.Printf("WARNING: packages '%s' has same root import %s", strings.Join(imps, ", "), r)
+		Warnf("packages '%s' has same root import %s", strings.Join(imps, ", "), r)
 		newDeps = append(newDeps, mergeDeps(r, rootDeps))
 	}
 	if !invalid {
@@ -140,7 +142,7 @@ func validateDeps(deps []depEntry) error {
 	if err := writeConfig(newDeps, tmpConfig); err != nil {
 		return err
 	}
-	log.Printf("WARNING: suggested vendor.conf is written to %s, use diff and common sense before using it", tmpConfig)
+	Warnf("suggested vendor.conf is written to %s, use diff and common sense before using it", tmpConfig)
 	return errors.New("There were some validation errors")
 }
 
@@ -274,6 +276,11 @@ func main() {
 		log.Println("Vendor initialized and result is in", configFile)
 	} else {
 		checkUnused(deps, vd)
+	}
+	if strict {
+		if w := Warns(); len(w) > 0 {
+			log.Fatalf("Treating %d warnings as errors", len(w))
+		}
 	}
 	log.Println("Success")
 }
