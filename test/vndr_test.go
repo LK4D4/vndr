@@ -11,7 +11,10 @@ import (
 	"testing"
 )
 
-const testRepo = "github.com/docker/swarmkit"
+const (
+	testRepo       = "github.com/docker/swarmkit"
+	testRepoCommit = "f420c4b9e1535170fc229db97ee8ac32374020b1" // May 6, 2017
+)
 
 func setGopath(cmd *exec.Cmd, gopath string) {
 	for _, env := range os.Environ() {
@@ -42,6 +45,12 @@ func TestVndr(t *testing.T) {
 	out, err := gitCmd.CombinedOutput()
 	if err != nil {
 		t.Fatalf("failed to clone %s to %s: %v, out: %s", testRepo, repoDir, err, out)
+	}
+	gitCheckoutCmd := exec.Command("git", "checkout", testRepoCommit)
+	gitCheckoutCmd.Dir = repoDir
+	out, err = gitCheckoutCmd.CombinedOutput()
+	if err != nil {
+		t.Fatalf("failed to checkout %s: %v, out: %s", testRepoCommit, err, out)
 	}
 	if err := os.RemoveAll(filepath.Join(repoDir, "vendor")); err != nil {
 		t.Fatal(err)
