@@ -7,6 +7,9 @@ go:
 install:
   - go get -t ./...
   - go get github.com/golang/lint/golint
+# git config is required for testing
+  - git config --global user.name "Dummy User"
+  - git config --global user.email "dummy@example.com"
 script:
   - go vet ./...
   - golint -set_exit_status ./...

@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"regexp"
 	"strings"
@@ -83,6 +84,38 @@ func checkUnused(deps []depEntry, vd string) {
 	for _, d := range deps {
 		if _, err := os.Stat(filepath.Join(vd, d.importPath)); err != nil && os.IsNotExist(err) {
 			Warnf("package %s is unused, consider removing it from vendor.conf", d.importPath)
+		}
+	}
+}
+
+func isGitRepo(vd string) bool {
+	workTreeCmd := exec.Command("git", "worktree", "list")
+	workTreeCmd.Dir = vd
+	_, err := workTreeCmd.CombinedOutput()
+	return err == nil
+}
+
+func checkContamination(vd string) {
+	if isGitRepo(vd) {
+		statusCmd := exec.Command("git", "status", "--porcelain", "--", ".")
+		statusCmd.Dir = vd
+		out, err := statusCmd.CombinedOutput()
+		if err != nil {
+			Warnf("could not run %v: %v", statusCmd, err)
+
+		} else if len(out) > 0 {
+			lines := strings.Split(string(out), "\n")
+			log.Printf("Contaminated files:")
+			files := 0
+			for _, l := range lines {
+				if s := strings.TrimSpace(l); s != "" {
+					log.Printf("\t%s", s)
+					files++
+				}
+			}
+			if files > 0 {
+				Warnf("%d files seem to have been modified manually", files)
+			}
 		}
 	}
 }
@@ -277,6 +310,7 @@ func main() {
 	} else {
 		checkUnused(deps, vd)
 	}
+	checkContamination(vd)
 	if strict {
 		if w := Warns(); len(w) > 0 {
 			log.Fatalf("Treating %d warnings as errors", len(w))
