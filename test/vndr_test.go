@@ -361,3 +361,46 @@ func getExitCode(t *testing.T, err error) int {
 	}
 	return status.ExitStatus()
 }
+
+func TestValidateLicense(t *testing.T) {
+	vndrBin, err := exec.LookPath("vndr")
+	if err != nil {
+		t.Fatal(err)
+	}
+	tmp, err := ioutil.TempDir("", "test-vndr-")
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer os.RemoveAll(tmp)
+	repoDir := filepath.Join(tmp, "src", testRepo)
+	if err := os.MkdirAll(repoDir, 0700); err != nil {
+		t.Fatal(err)
+	}
+	content := []byte(`github.com/AkihiroSuda/dummy-vndr-46 c5613b87bafaaf105fd3857dcae7ef23c931feec
+`)
+	// we need to import the pkg so that it won't be removed
+	if err := ioutil.WriteFile(filepath.Join(repoDir, "main.go"),
+		[]byte(`package main
+import _ "github.com/AkihiroSuda/dummy-vndr-46"
+func main(){})
+`), 0644); err != nil {
+		t.Fatal(err)
+	}
+	vendorConf := filepath.Join(repoDir, "vendor.conf")
+	if err := ioutil.WriteFile(vendorConf, content, 0666); err != nil {
+		t.Fatal(err)
+	}
+	vndrCmd := exec.Command(vndrBin, "-verbose")
+	vndrCmd.Dir = repoDir
+	setGopath(vndrCmd, tmp)
+
+	out, err := vndrCmd.CombinedOutput()
+	t.Logf("Output of vndr:\n%s", out)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if !bytes.Contains(out, []byte("WARNING(verbose): package github.com/AkihiroSuda/dummy-vndr-46 may lack license information")) {
+		t.Error("warning about license expected")
+	}
+}

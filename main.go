@@ -4,6 +4,7 @@ import (
 	"errors"
 	"flag"
 	"fmt"
+	"io/ioutil"
 	"log"
 	"os"
 	"path/filepath"
@@ -83,6 +84,27 @@ func checkUnused(deps []depEntry, vd string) {
 	for _, d := range deps {
 		if _, err := os.Stat(filepath.Join(vd, d.importPath)); err != nil && os.IsNotExist(err) {
 			Warnf("package %s is unused, consider removing it from vendor.conf", d.importPath)
+		}
+	}
+}
+
+func checkLicense(deps []depEntry, vd string) {
+	for _, d := range deps {
+		dir := filepath.Join(vd, d.importPath)
+		files, err := ioutil.ReadDir(dir)
+		if err != nil {
+			// err can be nil for unused package
+			continue
+		}
+		licenseFiles := 0
+		for _, file := range files {
+			p := filepath.Join(dir, file.Name())
+			if isLicenseFile(p) {
+				licenseFiles++
+			}
+		}
+		if licenseFiles == 0 && verbose {
+			log.Printf("WARNING(verbose): package %s may lack license information", d.importPath)
 		}
 	}
 }
@@ -277,6 +299,7 @@ func main() {
 	} else {
 		checkUnused(deps, vd)
 	}
+	checkLicense(deps, vd)
 	if strict {
 		if w := Warns(); len(w) > 0 {
 			log.Fatalf("Treating %d warnings as errors", len(w))
