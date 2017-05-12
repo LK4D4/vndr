@@ -8,6 +8,7 @@ import (
 	"os/exec"
 	"path/filepath"
 	"strings"
+	"syscall"
 	"testing"
 )
 
@@ -331,7 +332,7 @@ func TestUnused(t *testing.T) {
 	if err := ioutil.WriteFile(vendorConf, content, 0666); err != nil {
 		t.Fatal(err)
 	}
-	vndrCmd := exec.Command(vndrBin)
+	vndrCmd := exec.Command(vndrBin, "-strict")
 	vndrCmd.Dir = repoDir
 	setGopath(vndrCmd, tmp)
 
@@ -341,4 +342,22 @@ func TestUnused(t *testing.T) {
 		t.Logf("output: %v", string(out))
 		t.Errorf("there is no warning about unused package %s", unusedPkg)
 	}
+	if code := getExitCode(t, err); code == 0 {
+		t.Logf("strict mode expects non-zero exit code, got zero")
+	}
+}
+
+func getExitCode(t *testing.T, err error) int {
+	if err == nil {
+		return 0
+	}
+	exitError, ok := err.(*exec.ExitError)
+	if !ok {
+		t.Fatal("expected *os.ExitError")
+	}
+	status, ok := exitError.Sys().(syscall.WaitStatus)
+	if !ok {
+		t.Fatal("expected syscall.WaitStatus")
+	}
+	return status.ExitStatus()
 }
