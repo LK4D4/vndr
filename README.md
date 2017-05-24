@@ -7,6 +7,7 @@ Vndr has only two options: `-verbose` and `-whitelist`, both of which do
 exactly what they say on the tin.
 
 * `-verbose` adds additional output, helpful for debugging issues.
+* `-keep-vcs-files` do not delete the vcs files.
 * `-whitelist` allows you to specify several regular expressions for paths
   which will *not* be cleaned in the final stage of vendoring -- this is useful
   for running tests in a vendored project or otherwise ensuring that some

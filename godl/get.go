@@ -40,6 +40,25 @@ func Download(importPath, repoPath, target, rev string) (*VCS, error) {
 		rr.repo = repoPath
 	}
 
+	isRepo, err := rr.vcs.isRepo(root)
+	if err != nil {
+		return nil, err
+	}
+	if isRepo {
+		var updated bool
+		if rev == "" {
+			updated, err = rr.vcs.checkoutRev(root, rr.repo, rev)
+		} else {
+			updated, err = rr.vcs.update(root, rr.repo)
+		}
+		if err != nil {
+			return nil, err
+		}
+		if updated {
+			return &VCS{Root: root, ImportPath: rr.root, Type: rr.vcs.cmd}, nil
+		}
+	}
+
 	if err := os.RemoveAll(root); err != nil {
 		return nil, fmt.Errorf("remove package root: %v", err)
 	}

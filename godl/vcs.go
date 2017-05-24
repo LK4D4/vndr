@@ -56,6 +56,10 @@ type vcsCmd struct {
 	createCmd    []string // commands to download a fresh copy of a repository
 	createRevCmd []string // commands to download specified revision of a repository
 
+	isRepo         func(root string) (ret bool, err error)
+	updateCmd      []string // commands to update the repository
+	checkoutRevCmd []string // commands to checkout the specified revision
+
 	scheme  []string
 	pingCmd string
 
@@ -126,11 +130,28 @@ var vcsGit = &vcsCmd{
 	cmd:  "git",
 
 	createCmd:    []string{"clone {repo} {dir}", "-C {dir} submodule update --init --recursive"},
-	createRevCmd: []string{"clone {repo} {dir}", "-C {dir} submodule update --init --recursive", "-C {dir} checkout {rev}", "-C {dir} reset --hard {rev}"},
+	createRevCmd: []string{"clone {repo} {dir}", "-C {dir} checkout {rev}", "-C {dir} reset --hard {rev}", "-C {dir} submodule update --init --recursive"},
+
+	isRepo: gitIsRepo,
+
+	updateCmd:      []string{"-C {dir} pull {repo} master", "-C {dir} submodule update --init --recursive", "-C {dir} clean -fdx"},
+	checkoutRevCmd: []string{"-C {dir} fetch {repo} {rev}", "-C {dir} reset --hard {rev}", "-C {dir} submodule update --init --recursive", "-C {dir} clean -fdx"},
 
 	scheme:     []string{"git", "https", "http", "git+ssh", "ssh"},
 	pingCmd:    "ls-remote {scheme}://{repo}",
 	remoteRepo: gitRemoteRepo,
+}
+
+func gitIsRepo(root string) (bool, error) {
+	path := root + "/.git"
+	rootInfo, err := os.Stat(path)
+	if err != nil && !os.IsNotExist(err) {
+		return false, err
+	}
+	if err == nil && rootInfo.IsDir() {
+		return true, nil
+	}
+	return false, nil
 }
 
 // scpSyntaxRe matches the SCP-like addresses used by Git to access
@@ -339,6 +360,40 @@ func (v *vcsCmd) run1(dir string, cmdline string, keyval []string, verbose bool)
 // ping pings to determine scheme to use.
 func (v *vcsCmd) ping(scheme, repo string) error {
 	return v.runVerboseOnly(".", v.pingCmd, "scheme", scheme, "repo", repo)
+}
+
+// check if it is a repository
+func (v *vcsCmd) repoPresent(dir string) (bool, error) {
+	if v.isRepo == nil {
+		return false, nil
+	}
+	return v.isRepo(dir)
+}
+
+// update the repository
+func (v *vcsCmd) update(dir, repo string) (bool, error) {
+	if v.updateCmd == nil {
+		return false, nil
+	}
+	for _, cmd := range v.updateCmd {
+		if out, err := v.runOutput(".", cmd, "dir", dir, "repo", repo); err != nil {
+			return false, fmt.Errorf("Err: %v, out: %s", err, out)
+		}
+	}
+	return true, nil
+}
+
+// update the repository to a specific revision
+func (v *vcsCmd) checkoutRev(dir, repo, rev string) (bool, error) {
+	if v.checkoutRevCmd == nil {
+		return false, nil
+	}
+	for _, cmd := range v.checkoutRevCmd {
+		if out, err := v.runOutput(".", cmd, "dir", dir, "repo", repo, "rev", rev); err != nil {
+			return false, fmt.Errorf("Err: %v, out: %s", err, out)
+		}
+	}
+	return true, nil
 }
 
 // create creates a new copy of repo in dir.
