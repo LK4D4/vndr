@@ -95,6 +95,33 @@ func TestVndr(t *testing.T) {
 	if !bytes.Contains(out, []byte("Success")) {
 		t.Fatalf("Output did not report success: %s", out)
 	}
+
+	// contaminate vendor dir
+	contaminatedFile := filepath.Join(repoDir, "vendor", "contaminate")
+	if err := ioutil.WriteFile(contaminatedFile, []byte("contaminate"), 0644); err != nil {
+		t.Fatal(err)
+	}
+	gitAddCmd := exec.Command("git", "add", contaminatedFile)
+	gitAddCmd.Dir = repoDir
+	if out, err = gitAddCmd.CombinedOutput(); err != nil {
+		t.Fatalf("command +%v failed: %v, out: %s", gitAddCmd, err, out)
+	}
+	gitCommitCmd := exec.Command("git", "commit", "-a", "-m", "contaminate")
+	gitCommitCmd.Dir = repoDir
+	if out, err = gitCommitCmd.CombinedOutput(); err != nil {
+		t.Fatalf("command +%v failed: %v, out: %s", gitCommitCmd, err, out)
+	}
+	vndrStrictCmd := exec.Command(vndrBin, "-strict")
+	vndrStrictCmd.Dir = repoDir
+	setGopath(vndrStrictCmd, tmp)
+
+	out, err = vndrStrictCmd.CombinedOutput()
+	if err == nil {
+		t.Fatalf("vndr should fail: %s", out)
+	}
+	if !bytes.Contains(out, []byte("1 files seem to have been modified manually")) {
+		t.Fatalf("Output did not detect contamination: %s", out)
+	}
 }
 
 func TestVndrInit(t *testing.T) {
