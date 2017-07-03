@@ -64,8 +64,3 @@ Sometimes `vndr` might suggest you to change your `vendor.conf`:
 * in case of duplicated or non-top packages it will write suggested file to
 `vendor.conf.tmp`, you should diff your file with it and make changes accordingly.
 * in case of unused packages it will just print warning
-
-## Known issues
-
-* if you use symlinks for managing `GOPATH` or packages in it, `vndr` might not
-be able to work properly.
