@@ -7,6 +7,8 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"reflect"
+	"sort"
 	"strings"
 	"syscall"
 	"testing"
@@ -402,5 +404,66 @@ func main(){})
 
 	if !bytes.Contains(out, []byte("WARNING(verbose): package github.com/AkihiroSuda/dummy-vndr-46 may lack license information")) {
 		t.Error("warning about license expected")
+	}
+}
+
+func TestIgnoreTags(t *testing.T) {
+	vndrBin, err := exec.LookPath("vndr")
+	if err != nil {
+		t.Fatal(err)
+	}
+	tmp, err := ioutil.TempDir("", "test-vndr-")
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer os.RemoveAll(tmp)
+
+	repoDir := filepath.Join(tmp, "src", testRepo)
+	if err := os.MkdirAll(repoDir, 0700); err != nil {
+		t.Fatal(err)
+	}
+	content := []byte(`github.com/dqminh/vndr-50-ignoretags 589932c67bc128b4dfa6cabe58563335f9debe11
+`)
+	// we need to import the pkg so that it won't be removed
+	if err := ioutil.WriteFile(filepath.Join(repoDir, "main.go"),
+		[]byte(`package main
+import _ "github.com/dqminh/vndr-50-ignoretags"
+func main(){})
+`), 0644); err != nil {
+		t.Fatal(err)
+	}
+	vendorConf := filepath.Join(repoDir, "vendor.conf")
+	if err := ioutil.WriteFile(vendorConf, content, 0666); err != nil {
+		t.Fatal(err)
+	}
+	vndrCmd := exec.Command(vndrBin, "-verbose")
+	vndrCmd.Dir = repoDir
+	setGopath(vndrCmd, tmp)
+
+	out, err := vndrCmd.CombinedOutput()
+	t.Logf("Output of vndr:\n%s", out)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	vendoredPkgDir := filepath.Join(repoDir, "vendor", "github.com", "dqminh", "vndr-50-ignoretags")
+	kept := []string{}
+	err = filepath.Walk(vendoredPkgDir, func(path string, info os.FileInfo, err error) error {
+		kept = append(kept, filepath.Base(path))
+		return nil
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	sort.Sort(sort.StringSlice(kept))
+	if !reflect.DeepEqual(kept, []string{
+		"LICENSE",
+		"main.go",
+		"main_other.go",
+		"main_windows.go",
+		"vndr-50-ignoretags",
+	}) {
+		t.Errorf("expected to clean some ignore files, list of files are kept %s", kept)
 	}
 }

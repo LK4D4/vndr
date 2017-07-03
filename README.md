@@ -12,7 +12,7 @@ Vndr has next command line arguments:
   important files are retained after `vndr` is done cleaning unused files from
   your `vendor/` directory.
 * `-strict` exits with non-zero status on non-trivial warning
-  
+
 ## Installation
 
 Execute

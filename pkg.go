@@ -13,6 +13,7 @@ import (
 var (
 	ctx = &build.Context{
 		UseAllFiles: true,
+		IgnoreTags:  []string{"ignore"},
 		Compiler:    runtime.Compiler,
 		CgoEnabled:  true,
 		GOROOT:      runtime.GOROOT(),

@@ -68,8 +68,12 @@ func isVendorConfFile(path string) bool {
 // cleanVendor removes files from unused packages and non-go files
 func cleanVendor(vendorDir string, realDeps []*build.Package) error {
 	realPaths := make(map[string]bool)
+	ignoredGoFiles := []string{}
 	for _, pkg := range realDeps {
 		realPaths[pkg.Dir] = true
+		for _, f := range pkg.IgnoredGoFiles {
+			ignoredGoFiles = append(ignoredGoFiles, filepath.Join(pkg.Dir, f))
+		}
 	}
 	var paths []string
 	err := filepath.Walk(vendorDir, func(path string, i os.FileInfo, err error) error {
@@ -114,6 +118,12 @@ func cleanVendor(vendorDir string, realDeps []*build.Package) error {
 		// remove files from non-deps, non-go files and test files
 		if !realPaths[filepath.Dir(path)] || !isGoFile(path) || strings.HasSuffix(path, "_test.go") {
 			return os.Remove(path)
+		}
+		// remove ignored go files
+		for _, f := range ignoredGoFiles {
+			if f == path {
+				return os.Remove(path)
+			}
 		}
 		return nil
 	})
