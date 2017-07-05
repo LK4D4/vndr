@@ -3,8 +3,7 @@
 [![Build Status](https://travis-ci.org/LK4D4/vndr.svg?branch=master)](https://travis-ci.org/LK4D4/vndr)
 
 Vndr is simple vendoring tool, which is inspired by Docker vendor script.
-Vndr has only two options: `-verbose` and `-whitelist`, both of which do
-exactly what they say on the tin.
+Vndr has next command line arguments:
 
 * `-verbose` adds additional output, helpful for debugging issues.
 * `-whitelist` allows you to specify several regular expressions for paths
