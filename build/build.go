@@ -49,6 +49,8 @@ type Context struct {
 	BuildTags   []string
 	ReleaseTags []string
 
+	IgnoreTags []string // ignore files with list of tags
+
 	// The install suffix specifies a suffix to use in the name of the installation
 	// directory. By default it is empty, but custom builds that need to keep
 	// their outputs separate can set InstallSuffix to do so. For example, when
@@ -994,8 +996,20 @@ func (ctxt *Context) matchFile(dir, name string, returnImports bool, allTags map
 	}
 
 	// Look for +build comments to accept or reject the file.
-	if !ctxt.shouldBuild(data, allTags, binaryOnly) && !ctxt.UseAllFiles {
-		return
+	fileTags := make(map[string]bool)
+	if !ctxt.shouldBuild(data, fileTags, binaryOnly) {
+		// merge fileTags with allTags
+		for name, value := range fileTags {
+			allTags[name] = value
+
+			// IgnoreTags took precendent before UseAllFiles
+			if ctxt.matchIgnoreTags(name) {
+				return
+			}
+		}
+		if !ctxt.UseAllFiles {
+			return
+		}
 	}
 
 	match = true
@@ -1283,6 +1297,20 @@ func splitQuoted(s string) (r []string, err error) {
 		err = errors.New("unfinished escaping")
 	}
 	return args, err
+}
+
+// matchedIgnoreTags reports whether the valid tag name matched one of the
+// ignored tags
+func (ctxt *Context) matchIgnoreTags(name string) bool {
+	if strings.HasPrefix(name, "!") { // negation
+		return len(name) > 1 && !ctxt.matchIgnoreTags(name[1:])
+	}
+	for _, ignoreTag := range ctxt.IgnoreTags {
+		if name == ignoreTag {
+			return true
+		}
+	}
+	return false
 }
 
 // match reports whether the name is one of:
