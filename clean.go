@@ -138,15 +138,20 @@ func cleanVendor(vendorDir string, realDeps []*build.Package) error {
 		if err != nil {
 			return err
 		}
-		// remove licenses if it's only files
-		var onlyLicenses = true
+		// remove whole dir if there is only non-go files
+		// keep whitelisted, though
+		var onlyNonGoFile = true
 		for _, fi := range lst {
-			if !isLicenseFile(fi.Name()) {
-				onlyLicenses = false
+			relPath, err := filepath.Rel(vendorDir, filepath.Join(p, fi.Name()))
+			if err != nil {
+				return err
+			}
+			if cleanWhitelist.matchString(relPath) || fi.IsDir() || isGoFile(fi.Name()) {
+				onlyNonGoFile = false
 				break
 			}
 		}
-		if !onlyLicenses {
+		if !onlyNonGoFile {
 			continue
 		}
 		// remove all directories if they're not in dependency paths
