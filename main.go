@@ -80,9 +80,16 @@ func validateArgs() {
 	}
 }
 
-func checkUnused(deps []depEntry, vd string) {
+func checkUnused(dep depEntry, vd string) bool {
+	if _, err := os.Stat(filepath.Join(vd, dep.importPath)); err != nil && os.IsNotExist(err) {
+		return true
+	}
+	return false
+}
+
+func printUnused(deps []depEntry, vd string) {
 	for _, d := range deps {
-		if _, err := os.Stat(filepath.Join(vd, d.importPath)); err != nil && os.IsNotExist(err) {
+		if checkUnused(d, vd) {
 			Warnf("package %s is unused, consider removing it from vendor.conf", d.importPath)
 		}
 	}
@@ -252,14 +259,19 @@ func main() {
 		if err != nil {
 			log.Fatal(err)
 		}
+		deps, err = changedDeps(cfgDeps)
+		if err != nil {
+			fmt.Printf("Failed to parse cache file: %v", err)
+		}
 		startDownload := time.Now()
-		if err := cloneAll(vd, cfgDeps); err != nil {
+		if err := cloneAll(vd, deps); err != nil {
 			log.Fatal(err)
 		}
 		deps = cfgDeps
 		log.Printf("Dependencies downloaded. Download time: %v", time.Since(startDownload))
 	} else {
 		dlFunc = func(imp string) (*build.Package, error) {
+
 			vcs, err := godl.Download(imp, "", filepath.Join(wd, vendorDir), "")
 			if err != nil {
 				return nil, err
@@ -297,7 +309,7 @@ func main() {
 		}
 		log.Println("Vendor initialized and result is in", configFile)
 	} else {
-		checkUnused(deps, vd)
+		printUnused(deps, vd)
 	}
 	checkLicense(deps, vd)
 	if strict {
@@ -305,5 +317,13 @@ func main() {
 			log.Fatalf("Treating %d warnings as errors", len(w))
 		}
 	}
+	cacheDeps := []depEntry{}
+	for _, dep := range deps{
+		if !checkUnused(dep, vd){
+			cacheDeps = append(cacheDeps, dep)
+		}
+	}
+
+	err = writeConfig(cacheDeps, cacheFile)
 	log.Println("Success")
 }

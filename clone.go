@@ -9,7 +9,10 @@ import (
 	"sync"
 
 	"github.com/LK4D4/vndr/godl"
+	"os"
 )
+
+const cacheFile = "vendor/vendor-cache"
 
 type depEntry struct {
 	importPath string
@@ -92,4 +95,28 @@ func cloneDep(vd string, d depEntry) error {
 		return fmt.Errorf("%s: %v", d.importPath, err)
 	}
 	return cleanVCS(vcs)
+}
+func changedDeps(ds []depEntry) ([]depEntry, error) {
+	var uniqueDeps = []depEntry{}
+	cfg, err := os.Open(cacheFile)
+	if err != nil {
+		return ds, nil
+	}
+	existingDeps, err := parseDeps(cfg)
+	if err != nil {
+		return ds, fmt.Errorf("cache file incorrectly formatted")
+	}
+	for _, dep := range ds {
+		found := false
+		for _, eDep := range existingDeps {
+			if dep.rev == eDep.rev {
+				found = true
+				break
+			}
+		}
+		if !found{
+			uniqueDeps = append(uniqueDeps, dep)
+		}
+	}
+	return uniqueDeps, nil
 }
