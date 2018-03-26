@@ -66,7 +66,7 @@ func TestVndr(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	vndrCmd := exec.Command(vndrBin)
+	vndrCmd := exec.Command(vndrBin, "-strict")
 	vndrCmd.Dir = repoDir
 	setGopath(vndrCmd, tmp)
 
@@ -86,7 +86,7 @@ func TestVndr(t *testing.T) {
 	}
 
 	// revendor only etcd
-	vndrRevendorCmd := exec.Command(vndrBin, "github.com/coreos/etcd")
+	vndrRevendorCmd := exec.Command(vndrBin, "-strict", "github.com/coreos/etcd")
 	vndrRevendorCmd.Dir = repoDir
 	setGopath(vndrRevendorCmd, tmp)
 

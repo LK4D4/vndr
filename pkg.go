@@ -34,8 +34,9 @@ func collectAllDeps(wd string, dlFunc func(imp string) (*build.Package, error), 
 	var deps []*build.Package
 	initPkgsMap := make(map[*build.Package]bool)
 	for _, pkg := range initPkgs {
+		imp := strings.TrimRight(pkg.ImportPath, "/")
 		initPkgsMap[pkg] = true
-		pkgCache[pkg.ImportPath] = pkg
+		pkgCache[imp] = pkg
 		deps = append(deps, pkg)
 	}
 	for len(deps) != 0 {
@@ -68,6 +69,7 @@ func collectAllDeps(wd string, dlFunc func(imp string) (*build.Package, error), 
 				} else {
 					Warnf("dependency is not vendored: %s", imp)
 				}
+
 			}
 			if _, ok := err.(*build.MultiplePackageError); !ok && err != nil {
 				if verbose {

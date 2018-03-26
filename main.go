@@ -121,11 +121,26 @@ func mergeDeps(root string, deps []depEntry) depEntry {
 	return merged
 }
 
+var rootImportCache = map[string]string{}
+
+func rootImport(pkg string) (string, error) {
+	cachedRoot, ok := rootImportCache[pkg]
+	if ok {
+		return cachedRoot, nil
+	}
+	root, err := godl.RootImport(pkg)
+	if err != nil {
+		return "", err
+	}
+	rootImportCache[pkg] = root
+	return root, nil
+}
+
 func validateDeps(deps []depEntry) error {
 	roots := make(map[string][]depEntry)
 	var rootsOrder []string
 	for _, d := range deps {
-		root, err := godl.RootImport(d.importPath)
+		root, err := rootImport(d.importPath)
 		if err != nil {
 			return err
 		}
@@ -180,28 +195,29 @@ func getDeps() ([]depEntry, error) {
 	if err := validateDeps(deps); err != nil {
 		return nil, err
 	}
-	if len(flag.Args()) != 0 {
-		dep := depEntry{
-			importPath: flag.Arg(0),
-			rev:        flag.Arg(1),
-			repoPath:   flag.Arg(2),
-		}
-		// if there is no revision, try to find it in config
-		if dep.rev == "" {
-			for _, d := range deps {
-				if d.importPath == dep.importPath {
-					dep.rev = d.rev
-					dep.repoPath = d.repoPath
-					break
-				}
-			}
-			if dep.rev == "" {
-				return nil, fmt.Errorf("Failed to find %s in config file and revision was not specified", dep.importPath)
-			}
-		}
-		return []depEntry{dep}, nil
-	}
 	return deps, nil
+}
+
+func getFlagDep(cfgDeps []depEntry) (depEntry, error) {
+	dep := depEntry{
+		importPath: flag.Arg(0),
+		rev:        flag.Arg(1),
+		repoPath:   flag.Arg(2),
+	}
+	// if there is no revision, try to find it in config
+	if dep.rev == "" {
+		for _, d := range cfgDeps {
+			if d.importPath == dep.importPath {
+				dep.rev = d.rev
+				dep.repoPath = d.repoPath
+				break
+			}
+		}
+		if dep.rev == "" {
+			return depEntry{}, fmt.Errorf("Failed to find %s in config file and revision was not specified", dep.importPath)
+		}
+	}
+	return dep, nil
 }
 
 func main() {
@@ -251,6 +267,18 @@ func main() {
 		cfgDeps, err := getDeps()
 		if err != nil {
 			log.Fatal(err)
+		}
+		if len(flag.Args()) != 0 {
+			flagDep, err := getFlagDep(cfgDeps)
+			if err != nil {
+				log.Fatal(err)
+			}
+			cfgDeps = []depEntry{flagDep}
+		} else {
+			log.Println("Starting whole vndr cycle because no package specified")
+			if err := os.RemoveAll(vd); err != nil {
+				log.Fatal(err)
+			}
 		}
 		startDownload := time.Now()
 		if err := cloneAll(vd, cfgDeps); err != nil {
