@@ -7,6 +7,7 @@ import (
 	"log"
 	"strings"
 	"sync"
+	"time"
 
 	"github.com/LK4D4/vndr/godl"
 )
@@ -60,8 +61,18 @@ func cloneAll(vd string, ds []depEntry) error {
 	for _, d := range ds {
 		wg.Add(1)
 		go func(d depEntry) {
+			var err error
 			limit <- struct{}{}
-			errCh <- cloneDep(vd, d)
+			for i := 0; i < 20; i++ {
+				if err = cloneDep(vd, d); err == nil {
+					errCh <- nil
+					wg.Done()
+					<-limit
+					return
+				}
+				time.Sleep(1 * time.Second)
+			}
+			errCh <- err
 			wg.Done()
 			<-limit
 		}(d)
