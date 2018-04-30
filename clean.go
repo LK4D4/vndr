@@ -19,7 +19,7 @@ func isCDir(fis []os.FileInfo) bool {
 		if ext == ".cc" || ext == ".cpp" || ext == ".py" {
 			return false
 		}
-		if ext == ".h" {
+		if ext == ".h" || ext == ".c" {
 			hFound = true
 		}
 	}
