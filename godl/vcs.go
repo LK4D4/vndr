@@ -288,24 +288,24 @@ func (v *vcsCmd) String() string {
 // If an error occurs, run prints the command line and the
 // command's combined stdout+stderr to standard error.
 // Otherwise run discards the command's output.
-func (v *vcsCmd) run(dir string, cmd string, keyval ...string) error {
+func (v *vcsCmd) run(dir, cmd string, keyval ...string) error {
 	_, err := v.run1(dir, cmd, keyval, true)
 	return err
 }
 
 // runVerboseOnly is like run but only generates error output to standard error in verbose mode.
-func (v *vcsCmd) runVerboseOnly(dir string, cmd string, keyval ...string) error {
+func (v *vcsCmd) runVerboseOnly(dir, cmd string, keyval ...string) error {
 	_, err := v.run1(dir, cmd, keyval, false)
 	return err
 }
 
 // runOutput is like run but returns the output of the command.
-func (v *vcsCmd) runOutput(dir string, cmd string, keyval ...string) ([]byte, error) {
+func (v *vcsCmd) runOutput(dir, cmd string, keyval ...string) ([]byte, error) {
 	return v.run1(dir, cmd, keyval, true)
 }
 
 // run1 is the generalized implementation of run and runOutput.
-func (v *vcsCmd) run1(dir string, cmdline string, keyval []string, verbose bool) ([]byte, error) {
+func (v *vcsCmd) run1(dir, cmdline string, keyval []string, verbose bool) ([]byte, error) {
 	m := make(map[string]string)
 	for i := 0; i < len(keyval); i += 2 {
 		m[keyval[i]] = keyval[i+1]

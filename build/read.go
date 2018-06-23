@@ -84,12 +84,12 @@ func (r *importReader) peekByte(skipSpace bool) byte {
 				continue
 
 			case '/':
-				c = r.readByte()
-				if c == '/' {
+				switch c = r.readByte(); c {
+				case '/':
 					for c != '\n' && r.err == nil && !r.eof {
 						c = r.readByte()
 					}
-				} else if c == '*' {
+				case '*':
 					var c1 byte
 					for (c != '*' || c1 != '/') && r.err == nil {
 						if r.eof {
@@ -97,7 +97,7 @@ func (r *importReader) peekByte(skipSpace bool) byte {
 						}
 						c, c1 = c1, r.readByte()
 					}
-				} else {
+				default:
 					r.syntaxError()
 				}
 				c = r.readByte()

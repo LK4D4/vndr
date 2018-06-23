@@ -387,7 +387,7 @@ func nameExt(name string) string {
 // If an error occurs, Import returns a non-nil error and a non-nil
 // *Package containing partial information.
 //
-func (ctxt *Context) Import(path string, srcDir string, mode ImportMode) (*Package, error) {
+func (ctxt *Context) Import(path, srcDir string, mode ImportMode) (*Package, error) {
 	p := &Package{
 		ImportPath: path,
 	}
@@ -760,18 +760,19 @@ Found:
 				}
 			}
 		}
-		if isCgo {
+		switch {
+		case isCgo:
 			allTags["cgo"] = true
 			if ctxt.CgoEnabled {
 				p.CgoFiles = append(p.CgoFiles, name)
 			} else {
 				p.IgnoredGoFiles = append(p.IgnoredGoFiles, name)
 			}
-		} else if isXTest {
+		case isXTest:
 			p.XTestGoFiles = append(p.XTestGoFiles, name)
-		} else if isTest {
+		case isTest:
 			p.TestGoFiles = append(p.TestGoFiles, name)
-		} else {
+		default:
 			p.GoFiles = append(p.GoFiles, name)
 		}
 	}
@@ -1193,7 +1194,7 @@ func (ctxt *Context) saveCgo(filename string, di *Package, cg *ast.CommentGroup)
 
 // expandSrcDir expands any occurrence of ${SRCDIR}, making sure
 // the result is safe for the shell.
-func expandSrcDir(str string, srcdir string) (string, bool) {
+func expandSrcDir(str, srcdir string) (string, bool) {
 	// "\" delimited paths cause safeCgoName to fail
 	// so convert native paths with a different delimiter
 	// to "/" before starting (eg: on windows).
