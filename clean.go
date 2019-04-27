@@ -62,7 +62,12 @@ func isLicenseFile(path string) bool {
 }
 
 func isVendorConfFile(path string) bool {
-	return filepath.Base(path) == "vendor.conf"
+	switch filepath.Base(path) {
+	case "go.mod", "vendor.conf":
+		return true
+	default:
+		return false
+	}
 }
 
 // cleanVendor removes files from unused packages and non-go files
