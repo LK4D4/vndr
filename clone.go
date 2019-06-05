@@ -64,12 +64,19 @@ func cloneAll(vd string, ds []depEntry) error {
 			var err error
 			limit <- struct{}{}
 			for i := 0; i < 20; i++ {
+				if d.repoPath != "" {
+					log.Printf("\tClone %s to %s, revision %s, attempt %d/20", d.repoPath, d.importPath, d.rev, i+1)
+				} else {
+					log.Printf("\tClone %s, revision %s, attempt %d/20", d.importPath, d.rev, i+1)
+				}
 				if err = cloneDep(vd, d); err == nil {
 					errCh <- nil
 					wg.Done()
 					<-limit
+					log.Printf("\tFinished clone %s", d.importPath)
 					return
 				}
+				log.Printf("\tClone %s, attempt %d/20 finished with error %v", d.importPath, i+1, err)
 				time.Sleep(1 * time.Second)
 			}
 			errCh <- err
@@ -92,12 +99,6 @@ func cloneAll(vd string, ds []depEntry) error {
 }
 
 func cloneDep(vd string, d depEntry) error {
-	if d.repoPath != "" {
-		log.Printf("\tClone %s to %s, revision %s", d.repoPath, d.importPath, d.rev)
-	} else {
-		log.Printf("\tClone %s, revision %s", d.importPath, d.rev)
-	}
-	defer log.Printf("\tFinished clone %s", d.importPath)
 	vcs, err := godl.Download(d.importPath, d.repoPath, vd, d.rev)
 	if err != nil {
 		return fmt.Errorf("%s: %v", d.importPath, err)
