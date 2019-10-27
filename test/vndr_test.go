@@ -456,7 +456,7 @@ func main(){})
 		t.Fatal(err)
 	}
 
-	sort.Sort(sort.StringSlice(kept))
+	sort.Strings(kept)
 	if !reflect.DeepEqual(kept, []string{
 		"LICENSE",
 		"main.go",
