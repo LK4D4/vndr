@@ -17,6 +17,7 @@ import (
 	"sync"
 
 	"github.com/LK4D4/vndr/godl/singleflight"
+	"github.com/LK4D4/vndr/versioned"
 )
 
 // envForDir returns a copy of the environment
@@ -512,6 +513,9 @@ func repoRootFromVCSPaths(importPath, scheme string, security securityMode, vcsP
 			repo: match["repo"],
 			root: match["root"],
 		}
+		if versioned.IsVersioned(importPath) {
+			rr.root = importPath
+		}
 		return rr, nil
 	}
 	return nil, errUnknownSite
@@ -580,6 +584,9 @@ func repoRootForImportDynamic(importPath string, security securityMode) (*repoRo
 	}
 	if rr.vcs == nil {
 		return nil, fmt.Errorf("%s: unknown vcs %q", urlStr, mmi.VCS)
+	}
+	if versioned.IsVersioned(importPath) {
+		rr.root = importPath
 	}
 	return rr, nil
 }
