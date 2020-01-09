@@ -14,6 +14,7 @@ import (
 
 	"github.com/LK4D4/vndr/build"
 	"github.com/LK4D4/vndr/godl"
+	"github.com/LK4D4/vndr/versioned"
 )
 
 const (
@@ -155,7 +156,7 @@ func validateDeps(deps []depEntry) error {
 		rootDeps := roots[r]
 		if len(rootDeps) == 1 {
 			d := rootDeps[0]
-			if d.importPath != r {
+			if d.importPath != r && !versioned.IsVersioned(d.importPath) {
 				Warnf("package %s is not root import, should be %s", d.importPath, r)
 				invalid = true
 				newDeps = append(newDeps, depEntry{importPath: r, rev: d.rev, repoPath: d.repoPath})
