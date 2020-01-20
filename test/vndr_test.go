@@ -314,6 +314,76 @@ github.com/projectatomic/skopeo master`)
 	}
 }
 
+func TestCleanWhitelistFullCycle(t *testing.T) {
+	vndrBin, err := exec.LookPath("vndr")
+	if err != nil {
+		t.Fatal(err)
+	}
+	tmp, err := ioutil.TempDir("", "test-vndr-")
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer os.RemoveAll(tmp)
+	repoDir := filepath.Join(tmp, "src", testRepo)
+	if err := os.MkdirAll(repoDir, 0700); err != nil {
+		t.Fatal(err)
+	}
+	depDir := filepath.Join(repoDir, "vendor", "archive", "tar")
+	if err := os.MkdirAll(depDir, 0700); err != nil {
+		t.Fatal(err)
+	}
+	if err := ioutil.WriteFile(filepath.Join(depDir, "LICENSE"), []byte("foo"), 0644); err != nil {
+		t.Fatal(err)
+	}
+
+	content := []byte(`github.com/AkihiroSuda/dummy-vndr-46 c5613b87bafaaf105fd3857dcae7ef23c931feec
+`)
+	vendorConf := filepath.Join(repoDir, "vendor.conf")
+	if err := ioutil.WriteFile(vendorConf, content, 0666); err != nil {
+		t.Fatal(err)
+	}
+	vndrCmd := exec.Command(vndrBin, "-whitelist", `archive/tar/.*`)
+	vndrCmd.Dir = repoDir
+	setGopath(vndrCmd, tmp)
+
+	out, err := vndrCmd.CombinedOutput()
+	if err != nil {
+		t.Logf("output: %v", string(out))
+		t.Fatalf("error was not expected: %v", err)
+	}
+
+	if !bytes.Contains(out, []byte(fmt.Sprintf(`Ignoring paths matching %q`, `archive/tar/.*`))) {
+		t.Logf("output: %v", string(out))
+		t.Errorf(`output missing regular expression "archive/tar/.*"`)
+	}
+
+	// Make sure that the files were not "cleaned".
+	if _, err := os.Lstat(depDir); err != nil {
+		t.Errorf("%s was cleaned but shouldn't have been", depDir)
+	}
+
+	// Run again to make sure the above will be cleaned.
+	vndrCmd = exec.Command(vndrBin)
+	vndrCmd.Dir = repoDir
+	setGopath(vndrCmd, tmp)
+
+	out, err = vndrCmd.CombinedOutput()
+	if err != nil {
+		t.Logf("output: %v", string(out))
+		t.Fatalf("[no -whitelist] error was not expected: %v", err)
+	}
+
+	if bytes.Contains(out, []byte(fmt.Sprintf(`Ignoring paths matching %q`, `archive/tar/.*`))) {
+		t.Logf("output: %v", string(out))
+		t.Errorf(`[no -whitelist] output should not contain regular expression "archive/tar/.*"`)
+	}
+
+	// Make sure that the files were "cleaned".
+	if _, err := os.Lstat(depDir); err == nil {
+		t.Errorf("[no -whitelist] %s was NOT cleaned but should have been", depDir)
+	}
+}
+
 func TestUnused(t *testing.T) {
 	vndrBin, err := exec.LookPath("vndr")
 	if err != nil {
