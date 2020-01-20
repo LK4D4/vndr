@@ -277,8 +277,17 @@ func main() {
 			cfgDeps = []depEntry{flagDep}
 		} else {
 			log.Println("Starting whole vndr cycle because no package specified")
-			if err := os.RemoveAll(vd); err != nil {
-				log.Fatal(err)
+			if len(cleanWhitelist) > 0 {
+				for _, regex := range cleanWhitelist {
+					log.Printf("\tIgnoring paths matching %q", regex.String())
+				}
+				if err := cleanVendor(vd, nil); err != nil {
+					log.Fatal(err)
+				}
+			} else {
+				if err := os.RemoveAll(vd); err != nil {
+					log.Fatal(err)
+				}
 			}
 		}
 		startDownload := time.Now()
