@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io"
 	"log"
+	"sort"
 	"strings"
 	"sync"
 	"time"
@@ -55,6 +56,11 @@ func parseDeps(r io.Reader) ([]depEntry, error) {
 }
 
 func cloneAll(vd string, ds []depEntry) error {
+	// Sort dependencies so that longest import paths are handled last. This
+	// prevents, e.g. "github.com/foo/bar" from deleting "github.com/foo/bar/v3"
+	sort.Slice(ds, func(i, j int) bool {
+		return len(ds[i].importPath) < len(ds[j].importPath)
+	})
 	var wg sync.WaitGroup
 	errCh := make(chan error, len(ds))
 	limit := make(chan struct{}, 16)
