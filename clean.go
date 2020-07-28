@@ -51,7 +51,7 @@ func isInterestingDir(path string) bool {
 
 func isGoFile(path string) bool {
 	ext := filepath.Ext(path)
-	return ext == ".go" || ext == ".c" || ext == ".h" || ext == ".s" || ext == ".proto"
+	return ext == ".go" || ext == ".c" || ext == ".h" || ext == ".s" || ext == ".proto" || ext == ".syso"
 }
 
 // licenseFilesRegexp is a regexp of file names that are likely to contain licensing information
