@@ -124,16 +124,29 @@ func mergeDeps(root string, deps []depEntry) depEntry {
 
 var rootImportCache = map[string]string{}
 
-func rootImport(pkg string) (string, error) {
-	cachedRoot, ok := rootImportCache[pkg]
+func rootImport(dep depEntry) (string, error) {
+	cachedRoot, ok := rootImportCache[dep.importPath]
 	if ok {
 		return cachedRoot, nil
 	}
-	root, err := godl.RootImport(pkg)
-	if err != nil {
-		return "", err
+	var (
+		root string
+		err  error
+	)
+	if dep.repoPath != "" {
+		// A custom repository URL is passed. Skip validating if the package
+		// name is at the root of the repository, and assume it is.
+		root = dep.importPath
+	} else {
+		// Analyze the import path to determine the version control system,
+		// repository, and the import path for the root of the repository.
+		root, err = godl.RootImport(dep.importPath)
+		if err != nil {
+			return "", err
+		}
 	}
-	rootImportCache[pkg] = root
+
+	rootImportCache[dep.importPath] = root
 	return root, nil
 }
 
@@ -141,7 +154,7 @@ func validateDeps(deps []depEntry) error {
 	roots := make(map[string][]depEntry)
 	var rootsOrder []string
 	for _, d := range deps {
-		root, err := rootImport(d.importPath)
+		root, err := rootImport(d)
 		if err != nil {
 			return err
 		}

@@ -6,8 +6,10 @@ package godl
 
 import (
 	"fmt"
+	"net/url"
 	"os"
 	"path/filepath"
+	"strings"
 )
 
 // VCS represents package vcs root.
@@ -25,18 +27,47 @@ type VCS struct {
 // vendor/github.com/LK4D4/vndr.
 // rev is desired revision of package.
 func Download(importPath, repoPath, target, rev string) (*VCS, error) {
-	security := secure
-	// Analyze the import path to determine the version control system,
-	// repository, and the import path for the root of the repository.
-	rr, err := repoRootForImportPath(importPath, security)
-	if err != nil {
-		return nil, err
-	}
-	root := filepath.Join(target, rr.root)
+	var (
+		security = secure
+		rr       *repoRoot
+		err      error
+	)
+
 	if repoPath != "" {
-		rr.repo = repoPath
+		// A custom repository URL is passed, so we do not have to deduct the
+		// VCS repository from the import path. repoPath is expected to contain
+		// a scheme, so parse the URL, and pass it without scheme and 'user:pass'
+		// (if present).
+		u, err := url.Parse(repoPath)
+		if err != nil {
+			return nil, err
+		}
+		// repoRootFromVCSPaths expects the URL without `.git` suffix, so we'll
+		// remove it. This is a bit hacky, but we need the VCS detection to
+		// construct repoRoot.vcs. We're removing the scheme here, as "git://"
+		// URLs are no longer supported by GitHub, so we'll let it use "http(s)"
+		// instead.
+		cleanedRepo := u.Hostname() + strings.TrimSuffix(u.Path, ".git")
+		rr, err = repoRootFromVCSPaths(cleanedRepo, "", security, vcsPaths)
+		if err != nil {
+			return nil, err
+		}
+		// vendor should use the importPath as root
+		rr.root = importPath
+		if strings.HasSuffix(u.Path, ".git") {
+			// let's be nice, and restore the ".git" suffix if it was there.
+			rr.repo += ".git"
+		}
+	} else {
+		// Analyze the import path to determine the version control system,
+		// repository, and the import path for the root of the repository.
+		rr, err = repoRootForImportPath(importPath, security)
+		if err != nil {
+			return nil, err
+		}
 	}
 
+	root := filepath.Join(target, rr.root)
 	if err := os.RemoveAll(root); err != nil {
 		return nil, fmt.Errorf("remove package root: %v", err)
 	}
