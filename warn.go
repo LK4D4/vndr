@@ -29,9 +29,7 @@ func (w *warningCollector) Warn(a ...interface{}) {
 func (w *warningCollector) Warns() []string {
 	var l []string
 	w.mu.Lock()
-	for _, s := range w.warnings {
-		l = append(l, s)
-	}
+	l = append(l, w.warnings...)
 	w.mu.Unlock()
 	return l
 }
@@ -42,11 +40,6 @@ var WarningCollector = &warningCollector{}
 // Warnf logs a warning
 func Warnf(format string, a ...interface{}) {
 	WarningCollector.Warnf(format, a...)
-}
-
-// Warn logs a warning
-func Warn(a ...interface{}) {
-	WarningCollector.Warn(a...)
 }
 
 // Warns returns the logged warnings
