@@ -593,3 +593,62 @@ func Foo() (*dbus.Conn, error) {
 		t.Fatalf("expected %s to contain %q", systemdV22GoModPath, systemdV22GoModHeader)
 	}
 }
+
+// TestBrokenVanityURL validates that we're still able to pull a dependency if
+// the vanity URL is broken.
+func TestBrokenVanityURL(t *testing.T) {
+	vndrBin, err := exec.LookPath("vndr")
+	if err != nil {
+		t.Fatal(err)
+	}
+	tmp := t.TempDir()
+	repoDir := filepath.Join(tmp, "src", testRepo)
+	if err := os.MkdirAll(repoDir, 0o700); err != nil {
+		t.Fatal(err)
+	}
+	content := []byte(`
+code.example.org/clock   v1.0.0   git://github.com/cloudfoundry/clock.git
+code.example.org/foo     v1.0.0   https://github.com/cloudfoundry/clock.git
+`)
+	if err := os.WriteFile(filepath.Join(repoDir, "main.go"),
+		[]byte(`package foo
+
+import (
+        "code.example.org/clock"
+        "code.example.org/foo"
+)
+
+func Foo() {
+	_ = clock.NewClock()
+	_ = foo.NewClock()
+}
+`), 0644); err != nil {
+		t.Fatal(err)
+	}
+	vendorConf := filepath.Join(repoDir, "vendor.conf")
+	if err := os.WriteFile(vendorConf, content, 0o666); err != nil {
+		t.Fatal(err)
+	}
+	vndrCmd := exec.Command(vndrBin, "-verbose")
+	vndrCmd.Dir = repoDir
+	setGopath(vndrCmd, tmp)
+
+	out, err := vndrCmd.CombinedOutput()
+	t.Logf("Output of vndr:\n%s", out)
+	if err != nil {
+		t.Fatal(err)
+	}
+	vndrPath := filepath.Join(repoDir, "vendor/code.example.org/clock/package.go")
+	src, err := os.ReadFile(vndrPath)
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Logf("content of %s:\n%s", vndrPath, string(src))
+
+	vndrPath = filepath.Join(repoDir, "vendor/code.example.org/foo/package.go")
+	src, err = os.ReadFile(vndrPath)
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Logf("content of %s:\n%s", vndrPath, string(src))
+}
