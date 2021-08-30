@@ -72,15 +72,6 @@ var isSecureScheme = map[string]bool{
 	"ssh":     true,
 }
 
-func (v *vcsCmd) isSecure(repo string) bool {
-	u, err := url.Parse(repo)
-	if err != nil {
-		// If repo is not a URL, it's not secure.
-		return false
-	}
-	return isSecureScheme[u.Scheme]
-}
-
 // vcsList lists the known version control systems
 var vcsList = []*vcsCmd{
 	vcsHg,
@@ -280,18 +271,6 @@ func svnRemoteRepo(vcsSvn *vcsCmd, rootDir string) (remoteRepo string, err error
 
 func (v *vcsCmd) String() string {
 	return v.name
-}
-
-// run runs the command line cmd in the given directory.
-// keyval is a list of key, value pairs.  run expands
-// instances of {key} in cmd into value, but only after
-// splitting cmd into individual arguments.
-// If an error occurs, run prints the command line and the
-// command's combined stdout+stderr to standard error.
-// Otherwise run discards the command's output.
-func (v *vcsCmd) run(dir, cmd string, keyval ...string) error {
-	_, err := v.run1(dir, cmd, keyval, true)
-	return err
 }
 
 // runVerboseOnly is like run but only generates error output to standard error in verbose mode.
