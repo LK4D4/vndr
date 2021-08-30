@@ -1,0 +1,66 @@
+name: Test
+on: [push, pull_request]
+
+jobs:
+  test:
+    timeout-minutes: 10
+    strategy:
+      matrix:
+        go-version: ["1.16.x", "1.17.x"]
+        platform: [ubuntu-20.04]
+    runs-on: ${{ matrix.platform }}
+    env:
+      GO111MODULE: auto
+    steps:
+    - name: Install Go ${{ matrix.go-version }}
+      uses: actions/setup-go@v2
+      with:
+        go-version: ${{ matrix.go }}
+    - name: Set env
+      shell: bash
+      run: |
+        echo "GOPATH=${{ github.workspace }}" >> $GITHUB_ENV
+        echo "${{ github.workspace }}/bin" >> $GITHUB_PATH
+    - name: Checkout code
+      uses: actions/checkout@v2
+      with:
+        path: src/github.com/LK4D4/vndr
+    - name: Gofmt
+      run: test -z "$(gofmt -s -l . | tee /dev/stderr)"
+      working-directory: src/github.com/LK4D4/vndr
+    - name: Test
+      run: pwd && go test -v .
+      working-directory: src/github.com/LK4D4/vndr
+    - name: Integration tests
+      run: |
+        go install .
+        go test -v test/vndr_test.go
+      working-directory: src/github.com/LK4D4/vndr
+  lint:
+    name: Linters
+    timeout-minutes: 10
+    strategy:
+      matrix:
+        go-version: ["1.16.x"]
+        platform: [ubuntu-latest]
+        os: [ubuntu-20.04, macos-10.15, windows-2019]
+    runs-on: ${{ matrix.os }}
+    env:
+      GO111MODULE: auto
+
+    steps:
+      - uses: actions/setup-go@v2
+        with:
+          go-version: ${{ matrix.go-version }}
+      - name: Set env
+        run: |
+          echo "GOPATH=${{ github.workspace }}" >> $GITHUB_ENV
+          echo "${{ github.workspace }}/bin" >> $GITHUB_PATH
+      - uses: actions/checkout@v2
+        with:
+          path: src/github.com/LK4D4/vndr
+      - uses: golangci/golangci-lint-action@v2
+        with:
+          version: v1.42.0
+          skip-go-installation: true
+          working-directory: src/github.com/LK4D4/vndr
