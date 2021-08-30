@@ -244,8 +244,8 @@ func TestCleanWhitelist(t *testing.T) {
 	if err := os.MkdirAll(repoDir, 0700); err != nil {
 		t.Fatal(err)
 	}
-	content := []byte(`github.com/containers/image master
-github.com/projectatomic/skopeo master`)
+	content := []byte(`github.com/containers/image main
+github.com/projectatomic/skopeo main`)
 	vendorConf := filepath.Join(repoDir, "vendor.conf")
 	if err := ioutil.WriteFile(vendorConf, content, 0666); err != nil {
 		t.Fatal(err)
