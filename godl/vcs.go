@@ -120,7 +120,7 @@ var vcsGit = &vcsCmd{
 	createCmd:    []string{"clone {repo} {dir}", "-C {dir} submodule update --init --recursive"},
 	createRevCmd: []string{"clone {repo} {dir}", "-C {dir} submodule update --init --recursive", "-C {dir} checkout {rev}", "-C {dir} reset --hard {rev}"},
 
-	scheme:     []string{"git", "https", "http", "git+ssh", "ssh"},
+	scheme:     []string{"https", "http", "git+ssh", "ssh", "git"},
 	pingCmd:    "ls-remote {scheme}://{repo}",
 	remoteRepo: gitRemoteRepo,
 }
