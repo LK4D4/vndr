@@ -4,7 +4,6 @@ import (
 	"errors"
 	"flag"
 	"fmt"
-	"io/ioutil"
 	"log"
 	"os"
 	"path/filepath"
@@ -92,7 +91,7 @@ func checkUnused(deps []depEntry, vd string) {
 func checkLicense(deps []depEntry, vd string) {
 	for _, d := range deps {
 		dir := filepath.Join(vd, d.importPath)
-		files, err := ioutil.ReadDir(dir)
+		files, err := os.ReadDir(dir)
 		if err != nil {
 			// err can be nil for unused package
 			continue

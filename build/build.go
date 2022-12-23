@@ -16,7 +16,6 @@ import (
 	"go/parser"
 	"go/token"
 	"io"
-	"io/ioutil"
 	"log"
 	"os"
 	pathpkg "path"
@@ -91,8 +90,8 @@ type Context struct {
 
 	// ReadDir returns a slice of os.FileInfo, sorted by Name,
 	// describing the content of the named directory.
-	// If ReadDir is nil, Import uses ioutil.ReadDir.
-	ReadDir func(dir string) ([]os.FileInfo, error)
+	// If ReadDir is nil, Import uses os.ReadDir.
+	ReadDir func(dir string) ([]os.DirEntry, error)
 
 	// OpenFile opens a file (not a directory) for reading.
 	// If OpenFile is nil, Import uses os.Open.
@@ -177,12 +176,12 @@ func hasSubdir(root, dir string) (rel string, ok bool) {
 	return filepath.ToSlash(dir[len(root):]), true
 }
 
-// readDir calls ctxt.ReadDir (if not nil) or else ioutil.ReadDir.
-func (ctxt *Context) readDir(path string) ([]os.FileInfo, error) {
+// readDir calls ctxt.ReadDir (if not nil) or else os.ReadDir.
+func (ctxt *Context) readDir(path string) ([]os.DirEntry, error) {
 	if f := ctxt.ReadDir; f != nil {
 		return f(path)
 	}
-	return ioutil.ReadDir(path)
+	return os.ReadDir(path)
 }
 
 // openFile calls ctxt.OpenFile (if not nil) or else os.Open.
@@ -206,7 +205,7 @@ func (ctxt *Context) isFile(path string) bool {
 	if err != nil {
 		return false
 	}
-	f.Close()
+	_ = f.Close()
 	return true
 }
 
@@ -699,7 +698,7 @@ Found:
 			p.InvalidGoFiles = append(p.InvalidGoFiles, name)
 		}
 		if pf.Doc != nil && p.Doc == "" {
-			p.Doc = doc.Synopsis(pf.Doc.Text())
+			p.Doc = doc.Synopsis(pf.Doc.Text()) //nolint:staticcheck // ignore SA1019 (deprecated)
 		}
 
 		if mode&ImportComment != 0 {

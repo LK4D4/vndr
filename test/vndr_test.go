@@ -3,7 +3,6 @@ package vndrtest
 import (
 	"bytes"
 	"fmt"
-	"io/ioutil"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -41,11 +40,7 @@ func TestVndr(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	tmp, err := ioutil.TempDir("", "test-vndr-")
-	if err != nil {
-		t.Fatal(err)
-	}
-	defer os.RemoveAll(tmp)
+	tmp := t.TempDir()
 	repoDir := filepath.Join(tmp, "src", testRepo)
 	if err := os.MkdirAll(repoDir, 0700); err != nil {
 		t.Fatal(err)
@@ -105,11 +100,7 @@ func TestVndrInit(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	tmp, err := ioutil.TempDir("", "test-vndr-")
-	if err != nil {
-		t.Fatal(err)
-	}
-	defer os.RemoveAll(tmp)
+	tmp := t.TempDir()
 	repoPath := "github.com/LK4D4"
 	repoDir := filepath.Join(tmp, "src", repoPath)
 	if err := os.MkdirAll(repoDir, 0700); err != nil {
@@ -155,11 +146,7 @@ func TestValidateSubpackages(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	tmp, err := ioutil.TempDir("", "test-vndr-")
-	if err != nil {
-		t.Fatal(err)
-	}
-	defer os.RemoveAll(tmp)
+	tmp := t.TempDir()
 	repoDir := filepath.Join(tmp, "src", testRepo)
 	if err := os.MkdirAll(repoDir, 0700); err != nil {
 		t.Fatal(err)
@@ -177,7 +164,7 @@ github.com/docker/libcompose branch
 github.com/docker/swarmkit branch
 `)
 	vendorConf := filepath.Join(repoDir, "vendor.conf")
-	if err := ioutil.WriteFile(vendorConf, content, 0666); err != nil {
+	if err := os.WriteFile(vendorConf, content, 0666); err != nil {
 		t.Fatal(err)
 	}
 	vndrCmd := exec.Command(vndrBin)
@@ -213,7 +200,7 @@ github.com/docker/swarmkit branch
 	if _, err := os.Stat(tmpConfig); err != nil {
 		t.Fatalf("error stat %s: %v", tmpFileName, err)
 	}
-	b, err := ioutil.ReadFile(tmpConfig)
+	b, err := os.ReadFile(tmpConfig)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -235,11 +222,7 @@ func TestCleanWhitelist(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	tmp, err := ioutil.TempDir("", "test-vndr-")
-	if err != nil {
-		t.Fatal(err)
-	}
-	defer os.RemoveAll(tmp)
+	tmp := t.TempDir()
 	repoDir := filepath.Join(tmp, "src", testRepo)
 	if err := os.MkdirAll(repoDir, 0700); err != nil {
 		t.Fatal(err)
@@ -247,7 +230,7 @@ func TestCleanWhitelist(t *testing.T) {
 	content := []byte(`github.com/containers/image main
 github.com/projectatomic/skopeo main`)
 	vendorConf := filepath.Join(repoDir, "vendor.conf")
-	if err := ioutil.WriteFile(vendorConf, content, 0666); err != nil {
+	if err := os.WriteFile(vendorConf, content, 0666); err != nil {
 		t.Fatal(err)
 	}
 	vndrCmd := exec.Command(vndrBin,
@@ -319,11 +302,7 @@ func TestCleanWhitelistFullCycle(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	tmp, err := ioutil.TempDir("", "test-vndr-")
-	if err != nil {
-		t.Fatal(err)
-	}
-	defer os.RemoveAll(tmp)
+	tmp := t.TempDir()
 	repoDir := filepath.Join(tmp, "src", testRepo)
 	if err := os.MkdirAll(repoDir, 0700); err != nil {
 		t.Fatal(err)
@@ -332,14 +311,14 @@ func TestCleanWhitelistFullCycle(t *testing.T) {
 	if err := os.MkdirAll(depDir, 0700); err != nil {
 		t.Fatal(err)
 	}
-	if err := ioutil.WriteFile(filepath.Join(depDir, "LICENSE"), []byte("foo"), 0644); err != nil {
+	if err := os.WriteFile(filepath.Join(depDir, "LICENSE"), []byte("foo"), 0644); err != nil {
 		t.Fatal(err)
 	}
 
 	content := []byte(`github.com/AkihiroSuda/dummy-vndr-46 c5613b87bafaaf105fd3857dcae7ef23c931feec
 `)
 	vendorConf := filepath.Join(repoDir, "vendor.conf")
-	if err := ioutil.WriteFile(vendorConf, content, 0666); err != nil {
+	if err := os.WriteFile(vendorConf, content, 0666); err != nil {
 		t.Fatal(err)
 	}
 	vndrCmd := exec.Command(vndrBin, "-whitelist", `archive/tar/.*`)
@@ -389,11 +368,7 @@ func TestUnused(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	tmp, err := ioutil.TempDir("", "test-vndr-")
-	if err != nil {
-		t.Fatal(err)
-	}
-	defer os.RemoveAll(tmp)
+	tmp := t.TempDir()
 	repoDir := filepath.Join(tmp, "src", testRepo)
 	if err := os.MkdirAll(repoDir, 0700); err != nil {
 		t.Fatal(err)
@@ -401,7 +376,7 @@ func TestUnused(t *testing.T) {
 	unusedPkg := "github.com/docker/go-units"
 	content := []byte(unusedPkg + " master\n")
 	vendorConf := filepath.Join(repoDir, "vendor.conf")
-	if err := ioutil.WriteFile(vendorConf, content, 0666); err != nil {
+	if err := os.WriteFile(vendorConf, content, 0666); err != nil {
 		t.Fatal(err)
 	}
 	vndrCmd := exec.Command(vndrBin, "-strict")
@@ -439,11 +414,7 @@ func TestValidateLicense(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	tmp, err := ioutil.TempDir("", "test-vndr-")
-	if err != nil {
-		t.Fatal(err)
-	}
-	defer os.RemoveAll(tmp)
+	tmp := t.TempDir()
 	repoDir := filepath.Join(tmp, "src", testRepo)
 	if err := os.MkdirAll(repoDir, 0700); err != nil {
 		t.Fatal(err)
@@ -451,7 +422,7 @@ func TestValidateLicense(t *testing.T) {
 	content := []byte(`github.com/AkihiroSuda/dummy-vndr-46 c5613b87bafaaf105fd3857dcae7ef23c931feec
 `)
 	// we need to import the pkg so that it won't be removed
-	if err := ioutil.WriteFile(filepath.Join(repoDir, "main.go"),
+	if err := os.WriteFile(filepath.Join(repoDir, "main.go"),
 		[]byte(`package main
 import _ "github.com/AkihiroSuda/dummy-vndr-46"
 func main(){})
@@ -459,7 +430,7 @@ func main(){})
 		t.Fatal(err)
 	}
 	vendorConf := filepath.Join(repoDir, "vendor.conf")
-	if err := ioutil.WriteFile(vendorConf, content, 0666); err != nil {
+	if err := os.WriteFile(vendorConf, content, 0666); err != nil {
 		t.Fatal(err)
 	}
 	vndrCmd := exec.Command(vndrBin, "-verbose")
@@ -482,12 +453,7 @@ func TestIgnoreTags(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	tmp, err := ioutil.TempDir("", "test-vndr-")
-	if err != nil {
-		t.Fatal(err)
-	}
-	defer os.RemoveAll(tmp)
-
+	tmp := t.TempDir()
 	repoDir := filepath.Join(tmp, "src", testRepo)
 	if err := os.MkdirAll(repoDir, 0700); err != nil {
 		t.Fatal(err)
@@ -495,7 +461,7 @@ func TestIgnoreTags(t *testing.T) {
 	content := []byte(`github.com/dqminh/vndr-50-ignoretags 589932c67bc128b4dfa6cabe58563335f9debe11
 `)
 	// we need to import the pkg so that it won't be removed
-	if err := ioutil.WriteFile(filepath.Join(repoDir, "main.go"),
+	if err := os.WriteFile(filepath.Join(repoDir, "main.go"),
 		[]byte(`package main
 import _ "github.com/dqminh/vndr-50-ignoretags"
 func main(){})
@@ -503,7 +469,7 @@ func main(){})
 		t.Fatal(err)
 	}
 	vendorConf := filepath.Join(repoDir, "vendor.conf")
-	if err := ioutil.WriteFile(vendorConf, content, 0666); err != nil {
+	if err := os.WriteFile(vendorConf, content, 0666); err != nil {
 		t.Fatal(err)
 	}
 	vndrCmd := exec.Command(vndrBin, "-verbose")
@@ -543,11 +509,7 @@ func TestVersioned(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	tmp, err := ioutil.TempDir("", "test-vndr-")
-	if err != nil {
-		t.Fatal(err)
-	}
-	defer os.RemoveAll(tmp)
+	tmp := t.TempDir()
 	repoDir := filepath.Join(tmp, "src", testRepo)
 	if err := os.MkdirAll(repoDir, 0700); err != nil {
 		t.Fatal(err)
@@ -555,7 +517,7 @@ func TestVersioned(t *testing.T) {
 	content := []byte(`github.com/coreos/go-systemd/v22 v22.0.0
 github.com/godbus/dbus/v5 v5.0.3
 `)
-	if err := ioutil.WriteFile(filepath.Join(repoDir, "main.go"),
+	if err := os.WriteFile(filepath.Join(repoDir, "main.go"),
 		[]byte(`package foo
 
 import (
@@ -569,7 +531,7 @@ func Foo() (*dbus.Conn, error) {
 		t.Fatal(err)
 	}
 	vendorConf := filepath.Join(repoDir, "vendor.conf")
-	if err := ioutil.WriteFile(vendorConf, content, 0666); err != nil {
+	if err := os.WriteFile(vendorConf, content, 0666); err != nil {
 		t.Fatal(err)
 	}
 	vndrCmd := exec.Command(vndrBin, "-verbose")
@@ -583,7 +545,7 @@ func Foo() (*dbus.Conn, error) {
 	}
 	// https://github.com/coreos/go-systemd/blob/v22.0.0/go.mod appears in this path
 	systemdV22GoModPath := filepath.Join(repoDir, "vendor/github.com/coreos/go-systemd/v22/go.mod")
-	systemdV22GoMod, err := ioutil.ReadFile(systemdV22GoModPath)
+	systemdV22GoMod, err := os.ReadFile(systemdV22GoModPath)
 	if err != nil {
 		t.Fatal(err)
 	}
