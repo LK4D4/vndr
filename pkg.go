@@ -69,7 +69,6 @@ func collectAllDeps(wd string, dlFunc func(imp string) (*build.Package, error), 
 				} else {
 					Warnf("dependency is not vendored: %s", imp)
 				}
-
 			}
 			if _, ok := err.(*build.MultiplePackageError); !ok && err != nil {
 				if verbose {

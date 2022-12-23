@@ -380,13 +380,12 @@ func nameExt(name string) string {
 // In the directory containing the package, .go, .c, .h, and .s files are
 // considered part of the package except for:
 //
-//	- .go files in package documentation
-//	- files starting with _ or . (likely editor temporary files)
-//	- files with build constraints not satisfied by the context
+//   - .go files in package documentation
+//   - files starting with _ or . (likely editor temporary files)
+//   - files with build constraints not satisfied by the context
 //
 // If an error occurs, Import returns a non-nil error and a non-nil
 // *Package containing partial information.
-//
 func (ctxt *Context) Import(path, srcDir string, mode ImportMode) (*Package, error) {
 	p := &Package{
 		ImportPath: path,
@@ -1049,7 +1048,6 @@ var binaryOnlyComment = []byte("//go:binary-only-package")
 // If shouldBuild finds a //go:binary-only-package comment in a file that
 // should be built, it sets *binaryOnly to true. Otherwise it does
 // not change *binaryOnly.
-//
 func (ctxt *Context) shouldBuild(content []byte, allTags map[string]bool, binaryOnly *bool) bool {
 	sawBinaryOnly := false
 
@@ -1249,12 +1247,11 @@ func safeCgoName(s string, spaces bool) bool {
 //
 // For example, the following string:
 //
-//     a b:"c d" 'e''f'  "g\""
+//	a b:"c d" 'e''f'  "g\""
 //
 // Would be parsed as:
 //
-//     []string{"a", "b:c d", "ef", `g"`}
-//
+//	[]string{"a", "b:c d", "ef", `g"`}
 func splitQuoted(s string) (r []string, err error) {
 	var args []string
 	arg := make([]rune, len(s))
@@ -1325,7 +1322,6 @@ func (ctxt *Context) matchIgnoreTags(name string) bool {
 //	tag (if tag is listed in ctxt.BuildTags or ctxt.ReleaseTags)
 //	!tag (if tag is not listed in ctxt.BuildTags or ctxt.ReleaseTags)
 //	a comma-separated list of any of these
-//
 func (ctxt *Context) match(name string, allTags map[string]bool) bool {
 	if name == "" {
 		if allTags != nil {
@@ -1388,12 +1384,12 @@ func (ctxt *Context) match(name string, allTags map[string]bool) bool {
 // suffix which does not match the current system.
 // The recognized name formats are:
 //
-//     name_$(GOOS).*
-//     name_$(GOARCH).*
-//     name_$(GOOS)_$(GOARCH).*
-//     name_$(GOOS)_test.*
-//     name_$(GOARCH)_test.*
-//     name_$(GOOS)_$(GOARCH)_test.*
+//	name_$(GOOS).*
+//	name_$(GOARCH).*
+//	name_$(GOOS)_$(GOARCH).*
+//	name_$(GOOS)_test.*
+//	name_$(GOARCH)_test.*
+//	name_$(GOOS)_$(GOARCH)_test.*
 //
 // An exception: if GOOS=android, then files with GOOS=linux are also matched.
 func (ctxt *Context) goodOSArchFile(name string, allTags map[string]bool) bool {
