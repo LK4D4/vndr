@@ -3,7 +3,6 @@ package main
 import (
 	"errors"
 	"fmt"
-	"io/ioutil"
 	"os"
 	"os/exec"
 	"strings"
@@ -70,5 +69,5 @@ func writeConfig(deps []depEntry, cfgFile string) error {
 	for _, d := range deps {
 		lines = append(lines, d.String())
 	}
-	return ioutil.WriteFile(cfgFile, []byte(strings.Join(lines, "")), os.FileMode(0666))
+	return os.WriteFile(cfgFile, []byte(strings.Join(lines, "")), os.FileMode(0666))
 }

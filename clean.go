@@ -1,7 +1,6 @@
 package main
 
 import (
-	"io/ioutil"
 	"os"
 	"path/filepath"
 	"regexp"
@@ -12,7 +11,7 @@ import (
 	"github.com/LK4D4/vndr/godl"
 )
 
-func isCDir(fis []os.FileInfo) bool {
+func isCDir(fis []os.DirEntry) bool {
 	var hFound bool
 	for _, fi := range fis {
 		ext := filepath.Ext(fi.Name())
@@ -26,7 +25,7 @@ func isCDir(fis []os.FileInfo) bool {
 	return hFound
 }
 
-func isPBDir(fis []os.FileInfo) bool {
+func isPBDir(fis []os.DirEntry) bool {
 	var pbFound bool
 	for _, fi := range fis {
 		if fi.IsDir() {
@@ -42,7 +41,7 @@ func isPBDir(fis []os.FileInfo) bool {
 }
 
 func isInterestingDir(path string) bool {
-	fis, err := ioutil.ReadDir(path)
+	fis, err := os.ReadDir(path)
 	if err != nil {
 		return false
 	}
@@ -139,7 +138,7 @@ func cleanVendor(vendorDir string, realDeps []*build.Package) error {
 	// iterate over paths (longest first)
 	for _, p := range paths {
 		// at this point we cleaned all files from unused deps dirs
-		lst, err := ioutil.ReadDir(p)
+		lst, err := os.ReadDir(p)
 		if err != nil {
 			return err
 		}

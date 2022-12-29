@@ -7,7 +7,6 @@ package godl
 import (
 	"fmt"
 	"io"
-	"io/ioutil"
 	"net/http"
 	"net/url"
 	"time"
@@ -42,7 +41,7 @@ func httpGET(url string) ([]byte, error) {
 
 		return nil, err
 	}
-	b, err := ioutil.ReadAll(resp.Body)
+	b, err := io.ReadAll(resp.Body)
 	if err != nil {
 		return nil, fmt.Errorf("%s: %v", url, err)
 	}

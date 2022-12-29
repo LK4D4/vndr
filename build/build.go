@@ -16,7 +16,6 @@ import (
 	"go/parser"
 	"go/token"
 	"io"
-	"io/ioutil"
 	"log"
 	"os"
 	pathpkg "path"
@@ -91,8 +90,8 @@ type Context struct {
 
 	// ReadDir returns a slice of os.FileInfo, sorted by Name,
 	// describing the content of the named directory.
-	// If ReadDir is nil, Import uses ioutil.ReadDir.
-	ReadDir func(dir string) ([]os.FileInfo, error)
+	// If ReadDir is nil, Import uses os.ReadDir.
+	ReadDir func(dir string) ([]os.DirEntry, error)
 
 	// OpenFile opens a file (not a directory) for reading.
 	// If OpenFile is nil, Import uses os.Open.
@@ -177,12 +176,12 @@ func hasSubdir(root, dir string) (rel string, ok bool) {
 	return filepath.ToSlash(dir[len(root):]), true
 }
 
-// readDir calls ctxt.ReadDir (if not nil) or else ioutil.ReadDir.
-func (ctxt *Context) readDir(path string) ([]os.FileInfo, error) {
+// readDir calls ctxt.ReadDir (if not nil) or else os.ReadDir.
+func (ctxt *Context) readDir(path string) ([]os.DirEntry, error) {
 	if f := ctxt.ReadDir; f != nil {
 		return f(path)
 	}
-	return ioutil.ReadDir(path)
+	return os.ReadDir(path)
 }
 
 // openFile calls ctxt.OpenFile (if not nil) or else os.Open.
@@ -206,7 +205,7 @@ func (ctxt *Context) isFile(path string) bool {
 	if err != nil {
 		return false
 	}
-	f.Close()
+	_ = f.Close()
 	return true
 }
 
@@ -380,13 +379,12 @@ func nameExt(name string) string {
 // In the directory containing the package, .go, .c, .h, and .s files are
 // considered part of the package except for:
 //
-//	- .go files in package documentation
-//	- files starting with _ or . (likely editor temporary files)
-//	- files with build constraints not satisfied by the context
+//   - .go files in package documentation
+//   - files starting with _ or . (likely editor temporary files)
+//   - files with build constraints not satisfied by the context
 //
 // If an error occurs, Import returns a non-nil error and a non-nil
 // *Package containing partial information.
-//
 func (ctxt *Context) Import(path, srcDir string, mode ImportMode) (*Package, error) {
 	p := &Package{
 		ImportPath: path,
@@ -700,7 +698,7 @@ Found:
 			p.InvalidGoFiles = append(p.InvalidGoFiles, name)
 		}
 		if pf.Doc != nil && p.Doc == "" {
-			p.Doc = doc.Synopsis(pf.Doc.Text())
+			p.Doc = doc.Synopsis(pf.Doc.Text()) //nolint:staticcheck // ignore SA1019 (deprecated)
 		}
 
 		if mode&ImportComment != 0 {
@@ -1049,7 +1047,6 @@ var binaryOnlyComment = []byte("//go:binary-only-package")
 // If shouldBuild finds a //go:binary-only-package comment in a file that
 // should be built, it sets *binaryOnly to true. Otherwise it does
 // not change *binaryOnly.
-//
 func (ctxt *Context) shouldBuild(content []byte, allTags map[string]bool, binaryOnly *bool) bool {
 	sawBinaryOnly := false
 
@@ -1249,12 +1246,11 @@ func safeCgoName(s string, spaces bool) bool {
 //
 // For example, the following string:
 //
-//     a b:"c d" 'e''f'  "g\""
+//	a b:"c d" 'e''f'  "g\""
 //
 // Would be parsed as:
 //
-//     []string{"a", "b:c d", "ef", `g"`}
-//
+//	[]string{"a", "b:c d", "ef", `g"`}
 func splitQuoted(s string) (r []string, err error) {
 	var args []string
 	arg := make([]rune, len(s))
@@ -1325,7 +1321,6 @@ func (ctxt *Context) matchIgnoreTags(name string) bool {
 //	tag (if tag is listed in ctxt.BuildTags or ctxt.ReleaseTags)
 //	!tag (if tag is not listed in ctxt.BuildTags or ctxt.ReleaseTags)
 //	a comma-separated list of any of these
-//
 func (ctxt *Context) match(name string, allTags map[string]bool) bool {
 	if name == "" {
 		if allTags != nil {
@@ -1388,12 +1383,12 @@ func (ctxt *Context) match(name string, allTags map[string]bool) bool {
 // suffix which does not match the current system.
 // The recognized name formats are:
 //
-//     name_$(GOOS).*
-//     name_$(GOARCH).*
-//     name_$(GOOS)_$(GOARCH).*
-//     name_$(GOOS)_test.*
-//     name_$(GOARCH)_test.*
-//     name_$(GOOS)_$(GOARCH)_test.*
+//	name_$(GOOS).*
+//	name_$(GOARCH).*
+//	name_$(GOOS)_$(GOARCH).*
+//	name_$(GOOS)_test.*
+//	name_$(GOARCH)_test.*
+//	name_$(GOOS)_$(GOARCH)_test.*
 //
 // An exception: if GOOS=android, then files with GOOS=linux are also matched.
 func (ctxt *Context) goodOSArchFile(name string, allTags map[string]bool) bool {
