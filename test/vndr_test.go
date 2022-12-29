@@ -21,12 +21,12 @@ const (
 
 func setGopath(cmd *exec.Cmd, gopath string) {
 	for _, env := range os.Environ() {
-		if strings.HasPrefix(env, "GOPATH=") {
+		if strings.HasPrefix(env, "GOPATH=") || strings.HasPrefix(env, "GO111MODULE=") {
 			continue
 		}
 		cmd.Env = append(cmd.Env, env)
 	}
-	cmd.Env = append(cmd.Env, "GOPATH="+gopath)
+	cmd.Env = append(cmd.Env, "GOPATH="+gopath, "GO111MODULE=off")
 }
 
 func skipOnShort(t *testing.T) {
